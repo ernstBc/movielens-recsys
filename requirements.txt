@@ -1,0 +1,9 @@
+pygments
+torch
+torchvision
+pytorch-lightning
+pandas
+numpy
+optuna
+torchmetrics
+kagglehub
