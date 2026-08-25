@@ -1,0 +1,17 @@
+DATA_URL:
+  SMALL_URL: https://files.grouplens.org/datasets/movielens/ml-latest.zip
+  FULL_URL: https://files.grouplens.org/datasets/movielens/ml-latest-small.zip
+
+DATA_DIR:
+  DATA_100K:
+    RAW: data/100k/raw/
+    TRAIN: data/100k/train/ratings.csv
+    TEST: data/100k/test/ratings.csv
+    EVAL: data/100k/eval/ratings.csv
+
+  DATA_10M:
+    RAW: data/10M/raw/
+    TRAIN: data/10M/train/ratings.csv
+    TEST: data/10M/test/ratings.csv
+    EVAL: data/10M/eval/ratings.csv
+
