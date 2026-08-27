@@ -8,14 +8,24 @@ from torch.nn import functional as F
 class AutoEncoder(nn.Module):
     def __init__(self, io_features:int, hidden_dim:int):
         super().__init__()
-        
+
         self.encoder = nn.Linear(in_features=io_features, out_features=hidden_dim)
         self.decoder = nn.Linear(in_features=hidden_dim, out_features=io_features)
 
+        self.apply(self._init_weights)
+
+
+    def _init_weights(self, module):
+        if isinstance(module, nn.Linear):
+            nn.init.kaiming_normal_(module.weight, mode='fan_out', nonlinearity='relu')
+            if module.bias is not None:
+                nn.init.constant_(module.bias, 0.0)
+
 
     def forward(self, x):
-        x = self.encoder(x)
+        x = F.relu(self.encoder(x))
         x = self.decoder(x)
+
         return x
 
 
@@ -42,10 +52,20 @@ class DeepAutoEncoder(nn.Module):
         self.encoder = nn.Sequential(*encoder)
         self.decoder = nn.Sequential(*decoder)
 
+        self.apply(self._init_weights)
+
+
+    def _init_weights(self, module):
+        if isinstance(module, nn.Linear):
+            nn.init.kaiming_normal_(module.weight, mode='fan_out', nonlinearity='relu')
+            if module.bias is not None:
+                nn.init.constant_(module.bias, 0.0)
+
 
     def forward(self, x):
         x = self.encoder(x)
         x = self.decoder(x)
+
         return x
 
 
