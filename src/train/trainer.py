@@ -1,11 +1,11 @@
-from typing import Any
-
+from typing import Any, Literal
 import torch
 import pytorch_lightning as pl
 from src.utils.utils import read_yaml
 from src.models.autoencoders import AutoEncoder, DeepAutoEncoder
 from src.models.matrix_factorization import MatrixFactorization, DeepMatrixFactorization
 from src.models.wrappers import AutoencoderWrapper, MatrixFactorizationWrapper
+from src.data.wrappers import AutoencoderSampling, UserItemDataSampling
 
 
 class TrainerModelConfig:
@@ -32,19 +32,39 @@ class HyperparamsConfig:
             new_config[nk] = nv
 
         return new_config
-        
+
+class DatasetConfig:
+    def __init__(self, config_path:str):
+        self.config = read_yaml(config_path)['DATASET_CONFIG']
+
+
+    def __call__(self, **kwds: Any) -> dict:
+        new_config = self.config
+        for nk, nv in kwds:
+            new_config[nk] = nv
+
+        return new_config
+
+
 
 class Trainer:
     def __init__(self, 
                  model_type:str, 
+                 dataset_type:Literal['autoencoder', 'user_item', 'negative_sampling'],
+                 dataset_size:Literal['100k', '10m'],
                  model_config:TrainerModelConfig, 
                  model_extra_config:dict, 
                  hyperparams_config:HyperparamsConfig, 
-                 hyperparams_extra_config:dict):
-        
+                 hyperparams_extra_config:dict,
+                 dataset_config:DatasetConfig,
+                 extra_dataset_config:dict):
+
+        self.model_type = model_type 
+        self.dataset_type = dataset_type
         self.model_config = model_config(**model_extra_config)
         self.hyperparams_config = hyperparams_config(**hyperparams_extra_config)
-        self.model_type = model_type 
+        self.dataset_config = dataset_config(**extra_dataset_config)
+        self.dataset_size = dataset_size
         self.model = None
         self.dataloader_module = None
 
@@ -64,12 +84,8 @@ class Trainer:
         self.model = model
 
 
-    def build_dataloader(self):
-        self.dataloader_module = None
-        pass
 
-
-    def _set_model_and_dataloader(self):
+    def _get_model(self):
         if self.model_type == 'autoencoder':
             model = AutoEncoder(**self.model_config)
             model_pl = AutoencoderWrapper(model, **self.hyperparams_config)
@@ -86,3 +102,15 @@ class Trainer:
             raise ValueError("Invalid model type")
         
         return model_pl
+
+    def _get_dataloader(self):
+        if self.dataset_type == 'autoencoder':
+            dataloader = AutoencoderSampling(self.dataset_config, self.dataset_size)
+        elif self.dataset_type == 'user_item':
+            dataloader = UserItemDataSampling(self.dataset_config, split_mode=self.dataset_config['SPLIT_MODE'], data_size=self.dataset_size, negative_sampling=False)
+        elif self.dataset_type == 'negative_sampling':
+            dataloader = UserItemDataSampling(self.dataset_config, split_mode=self.dataset_config['SPLIT_MODE'], data_size=self.dataset_size, negative_sampling=True)
+        else:
+            raise ValueError("Invalid dataset type")
+        
+        return dataloader

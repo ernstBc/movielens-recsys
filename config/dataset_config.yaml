@@ -1,0 +1,15 @@
+# Default values for dataset configuration
+AUTOENCODER_DATASET_CONFIG:
+  DATASET_PATH: "data/ml-100k/u.data"
+  split_mode: user, 
+  data_size: 100k, 
+  batch_size: 32
+  num_workers: 2
+
+USER_ITEM_DATASET_CONFIG:
+  split_mode: user, 
+  data_size: 100k, 
+  negative_sampling: False
+  testing: True
+  batch_size: 512
+  num_workers: 2
