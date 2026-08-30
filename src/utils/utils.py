@@ -1,5 +1,6 @@
 
 import pickle
+import yaml
 
 
 def save_artifact(artifact:object, save_path:str) -> None:
@@ -12,3 +13,10 @@ def load_artifact(artifact_path:str) -> object:
         obj = pickle.load(file)
 
     return obj
+
+
+def read_yaml(yaml_file_path:str) -> dict:
+    with open(yaml_file_path, 'r') as file:
+        yaml_file = yaml.safe_load(file)
+
+    return yaml_file

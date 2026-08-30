@@ -1,0 +1,22 @@
+AUTOENCODER_CONFIG:
+  io_features: 9724
+  hidden_dim: 64
+
+DEEP_AUTOENCODER_CONFIG:
+  io_features: 9724
+  hidden_dims: [64,64,64]
+  dropout_rate: 0.5
+
+MATRIX_FACTORIZATION_CONFIG:
+  n_users: 609
+  n_items: 9724
+  user_embedding_dim: 64
+  item_embedding_dim: 64
+
+DEEP_MATRIX_FACTORIZATION_CONFIG:
+  n_users: 609
+  n_items: 9724
+  user_embedding_dim: 64
+  item_embedding_dim: 64 
+  hidden_dims: [64,64,64]
+  dropout_rate: 0.5

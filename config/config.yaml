@@ -4,6 +4,7 @@ DATA_URL:
 
 DATA_DIR:
   DATA_100K:
+    NAME: ml-latest.zip
     RAW: data/100k/raw/
     TRAIN: data/100k/train/ratings.csv
     TEST: data/100k/test/ratings.csv
