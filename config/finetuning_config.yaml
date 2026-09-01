@@ -1,0 +1,76 @@
+# models
+AUTOENCODER:
+  hidden_dim: 
+    type: int
+    low: 8
+    high: 512
+    step: 8
+
+DEEP_AUTOENCODER:
+  hidden_dims: 
+    type: list_int
+    low: 64
+    high: 512
+    step: 32
+    min_elements: 1
+    max_elements: 3
+  dropout_rate:
+    type: float
+    low: 0.2
+    high: 0.5
+    logscale: False
+
+MATRIX_FACTORIZATION:
+  user_embedding_dim: 
+    type: int
+    low: 8
+    high: 512
+    step: 8
+  item_embedding_dim:
+    type: int
+    low: 8
+    high: 512
+    step: 8
+
+DEEP_MATRIX_FACTORIZATION:
+  user_embedding_dim: 
+    type: int
+    low: 8
+    high: 512
+    step: 8
+  item_embedding_dim:
+    type: int
+    low: 8
+    high: 512
+    step: 8
+  hidden_dims: 
+    type: list_int
+    low: 8 
+    high: 256
+    step: 8
+    min_elements: 1
+    max_elements: 5
+  dropout_rate:
+    type: float
+    low: 0
+    high: 0.9
+    logscale: False
+
+HYPERPARAMS:
+  lr:
+    type: float
+    low: 0.00001
+    high: 0.01
+    logscale: True
+  weight_decay:
+    type: float
+    low: 0.00006
+    high: 0.02
+    logscale: True
+
+DATASET:
+  batch_size:
+    type: int
+    low: 8
+    high: 512
+    step: 8

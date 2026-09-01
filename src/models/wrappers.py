@@ -1,5 +1,4 @@
 from typing import Any
-
 import torch
 import pytorch_lightning as pl
 from src.train.customs import MaskedMSELoss
@@ -48,7 +47,7 @@ class AutoencoderWrapper(pl.LightningModule):
 
 
     def _get_optimizer(self):
-        optimizer_name = self.optimizer_name
+        optimizer_name = self.config['optimizer_name']
         lr = self.config['lr']
         weight_decay = self.config['weight_decay']
         if optimizer_name == 'adam':
@@ -69,12 +68,12 @@ class AutoencoderWrapper(pl.LightningModule):
 
 
 class MatrixFactorizationWrapper(pl.LightningModule):
-    def __init__(self, model, optimizer_name:str, config:dict):
+    def __init__(self, model, negative_sampling:bool, optimizer_name:str, lr:float, weight_decay:float):
         super().__init__()
         self.model = model
+        self.negative_sampling = negative_sampling
         self.loss_fn = MaskedMSELoss()
-        self.config = config
-        self.optimizer_name = optimizer_name
+        self.config = {'lr': lr, 'weight_decay': weight_decay, 'optimizer_name': optimizer_name}
 
     def forward(self, batch):
         user_indices, item_indices = batch
@@ -82,7 +81,11 @@ class MatrixFactorizationWrapper(pl.LightningModule):
 
 
     def training_step(self, batch, batch_idx):
-        user_indices, item_indices, ratings = batch
+        if self.negative_sampling:
+            user_indices, item_indices, ratings, negative_samples = batch
+            
+        else:
+            user_indices, item_indices, ratings = batch
         ratings_hat = self.model(user_indices, item_indices)
         loss = self.loss_fn(ratings_hat, ratings)
 
@@ -114,7 +117,7 @@ class MatrixFactorizationWrapper(pl.LightningModule):
 
 
     def _get_optimizer(self):
-        optimizer_name = self.optimizer_name
+        optimizer_name = self.config['optimizer_name']
         lr = self.config['lr']
         weight_decay = self.config['weight_decay']
         if optimizer_name == 'adam':

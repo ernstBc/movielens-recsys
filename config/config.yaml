@@ -3,7 +3,7 @@ DATA_URL:
   FULL_URL: https://files.grouplens.org/datasets/movielens/ml-latest.zip
 
 DATA_DIR:
-  DATA_100K:
+  100K:
     NAME: ml-latest.zip
     RAW: data/100k/raw/
     TRAIN: data/100k/train/ratings.csv
@@ -13,7 +13,8 @@ DATA_DIR:
     N_USERS: 610
     N_MOVIES: 9724
 
-  DATA_10M:
+  10M:
+    NAME: ml-latest.zip
     RAW: data/10M/raw/
     TRAIN: data/10M/train/ratings.csv
     TEST: data/10M/test/ratings.csv

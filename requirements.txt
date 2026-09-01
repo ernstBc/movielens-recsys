@@ -6,4 +6,4 @@ pandas
 numpy
 optuna
 torchmetrics
-kagglehub
+matplotlib
