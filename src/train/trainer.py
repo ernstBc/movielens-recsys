@@ -6,6 +6,7 @@ from src.models.autoencoders import AutoEncoder, DeepAutoEncoder
 from src.models.matrix_factorization import MatrixFactorization, DeepMatrixFactorization
 from src.models.wrappers import AutoencoderWrapper, MatrixFactorizationWrapper
 from src.data.wrappers import AutoencoderSampling, UserItemDataSampling
+
 import logging
 
 
@@ -56,9 +57,11 @@ class Trainer:
         self.trainer = trainer
 
 
-    def setup(self):
-        self.model, self.dataloader_module = self._get_model_and_dataloader()
-
+    def setup(self, model:bool=True, dataloader:bool=False):
+        if self.model:
+            self.model = self._get_model()
+        if (self.dataloader_module is None) or (dataloader):
+            self.dataloader_module = self._get_dataloader()
 
     def _get_model(self):
         if self.model_type == 'autoencoder':
@@ -94,18 +97,11 @@ class Trainer:
         return dataloader
 
 
-    def _get_model_and_dataloader(self):
-        model = self._get_model()
-        dataloader = self._get_dataloader()
-
-        return model, dataloader
-
 
     def evaluate(self, verbose=True):
-        if self.trainer is None:
-            self.trainer = pl.Trainer()
+        trainer = self._get_trainer(max_epochs=1, save_model=False, verbose=verbose)
         
-        results = self.trainer.test(self.model, self.dataloader_module, verbose=verbose)
+        results = trainer.test(self.model, self.dataloader_module, verbose=verbose)
         return results
 
 

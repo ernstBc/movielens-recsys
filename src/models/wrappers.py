@@ -3,6 +3,7 @@ import torch
 import pytorch_lightning as pl
 from src.train.customs import MaskedMSELoss
 from torch import optim
+from torch import nn
 
 
 class AutoencoderWrapper(pl.LightningModule):
@@ -13,8 +14,8 @@ class AutoencoderWrapper(pl.LightningModule):
         self.config = {'lr': lr, 'weight_decay': weight_decay, 'optimizer_name': optimizer_name}
 
 
-    def forward(self, batch):
-        return self.model(batch)
+    def forward(self, user_id, item_id):
+        return self.model(user_id, item_id)
 
 
     def training_step(self, batch, batch_idx):
@@ -66,14 +67,18 @@ class AutoencoderWrapper(pl.LightningModule):
 
 
 
-
 class MatrixFactorizationWrapper(pl.LightningModule):
     def __init__(self, model, negative_sampling:bool, optimizer_name:str, lr:float, weight_decay:float):
         super().__init__()
         self.model = model
         self.negative_sampling = negative_sampling
-        self.loss_fn = MaskedMSELoss()
         self.config = {'lr': lr, 'weight_decay': weight_decay, 'optimizer_name': optimizer_name}
+
+        if negative_sampling:
+            self.loss_fn = nn.MSELoss()
+        else:
+            self.loss_fn = MaskedMSELoss()
+
 
     def forward(self, batch):
         user_indices, item_indices = batch
@@ -81,12 +86,9 @@ class MatrixFactorizationWrapper(pl.LightningModule):
 
 
     def training_step(self, batch, batch_idx):
-        if self.negative_sampling:
-            user_indices, item_indices, ratings, negative_samples = batch
-            
-        else:
-            user_indices, item_indices, ratings = batch
+        user_indices, item_indices, ratings = batch
         ratings_hat = self.model(user_indices, item_indices)
+
         loss = self.loss_fn(ratings_hat, ratings)
 
         self.log('train_loss', loss, on_step=True, prog_bar=True, logger=True)
@@ -120,6 +122,7 @@ class MatrixFactorizationWrapper(pl.LightningModule):
         optimizer_name = self.config['optimizer_name']
         lr = self.config['lr']
         weight_decay = self.config['weight_decay']
+
         if optimizer_name == 'adam':
             optimizer = optim.Adam(self.parameters(), lr=lr, weight_decay=weight_decay)
         elif optimizer_name == 'adamw':

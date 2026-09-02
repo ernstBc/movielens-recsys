@@ -1,10 +1,11 @@
 import os
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader, random_split
-from src.data.datasets import AutoEncoderDataset, NegSampleDataset, SimpleDataSet
+from src.data.datasets import AutoEncoderDataset, NegSampleDataset, UserItemDataset
 from src.data.get_data import GetData
 from src.data.processing_data import ProcessData
 from typing import Literal
+from src.train.customs import negative_sampling_collate_fn
 
 
 class AutoencoderSampling(pl.LightningDataModule):
@@ -49,11 +50,12 @@ class AutoencoderSampling(pl.LightningDataModule):
 
 
 class UserItemDataSampling(pl.LightningDataModule):
-    def __init__(self, data_dir_config:dict, dataset_config:dict):
+    def __init__(self, data_dir_config:dict, dataset_config:dict, force_process:bool=False):
         super().__init__()
 
         self.data_dir_config = data_dir_config
         self.dataset_config = dataset_config
+        self.force_process = force_process
 
 
     def prepare_data(self) -> None:
@@ -84,7 +86,7 @@ class UserItemDataSampling(pl.LightningDataModule):
                          splits=splits, 
                          mode=split_mode)
 
-        pd.process_data(force_process=True)
+        pd.process_data(force_process=self.force_process)
 
 
     def setup(self, stage: str) -> None:
@@ -99,8 +101,8 @@ class UserItemDataSampling(pl.LightningDataModule):
             train_dataset = NegSampleDataset(data_path=train_set_path)
             val_dataset = NegSampleDataset(data_path=val_set_path)
         else:
-            train_dataset = SimpleDataSet(data_path=train_set_path)
-            val_dataset = SimpleDataSet(data_path=val_set_path)
+            train_dataset = UserItemDataset(data_path=train_set_path)
+            val_dataset = UserItemDataset(data_path=val_set_path)
 
         if testing:
             test_set_path = self.data_dir_config['DATA_DIR'][data_size]['TEST']
@@ -108,7 +110,7 @@ class UserItemDataSampling(pl.LightningDataModule):
             if negative_sampling:
                 test_dataset = NegSampleDataset(data_path=test_set_path)
             else:
-                test_dataset = SimpleDataSet(data_path=test_set_path)
+                test_dataset = UserItemDataset(data_path=test_set_path)
 
             self.test_dataset = test_dataset
 
@@ -120,22 +122,26 @@ class UserItemDataSampling(pl.LightningDataModule):
         return DataLoader(self.train_dataset, 
                           batch_size=self.dataset_config['batch_size'], 
                           shuffle=True,
-                          num_workers=self.dataset_config['num_workers'])
+                          num_workers=self.dataset_config['num_workers'],
+                          collate_fn=negative_sampling_collate_fn if isinstance(self.train_dataset, NegSampleDataset) else None)
 
     def val_dataloader(self) -> DataLoader:
         return DataLoader(self.val_dataset, 
                           batch_size=self.dataset_config['batch_size'], 
                           shuffle=False,
-                          num_workers=self.dataset_config['num_workers'])
+                          num_workers=self.dataset_config['num_workers'],
+                          collate_fn=negative_sampling_collate_fn if isinstance(self.val_dataset, NegSampleDataset) else None)
 
     def test_dataloader(self) -> DataLoader:
         if self.dataset_config['testing']:
             return DataLoader(self.test_dataset, 
                               batch_size=self.dataset_config['batch_size'], 
                               shuffle=False,
-                              num_workers=self.dataset_config['num_workers'])
+                              num_workers=self.dataset_config['num_workers'],
+                              collate_fn=negative_sampling_collate_fn if isinstance(self.test_dataset, NegSampleDataset) else None)
         else:
             return DataLoader(self.val_dataset, 
                               batch_size=self.dataset_config['batch_size'], 
                               shuffle=False,
-                              num_workers=self.dataset_config['num_workers'])
+                              num_workers=self.dataset_config['num_workers'],
+                              collate_fn=negative_sampling_collate_fn if isinstance(self.val_dataset, NegSampleDataset) else None)

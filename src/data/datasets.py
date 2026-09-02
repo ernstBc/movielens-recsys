@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 from typing import Tuple
 
 
-class SimpleDataSet(Dataset):
+class UserItemDataset(Dataset):
     def __init__(self, data_path:str) -> None:
         self.data = pd.read_csv(data_path)
 
