@@ -8,14 +8,13 @@ DEEP_AUTOENCODER_CONFIG:
   dropout_rate: 0.5
 
 MATRIX_FACTORIZATION_CONFIG:
-  n_users: 609
-  n_items: 9724
-  user_embedding_dim: 64
-  item_embedding_dim: 64
+  n_users: 611 # n_user + 1 padding token
+  n_items: 9725 # n_items +1 (padding token)
+  user_item_embedding_dim: 64
 
 DEEP_MATRIX_FACTORIZATION_CONFIG:
-  n_users: 609
-  n_items: 9724
+  n_users: 611 # n_user + 1 padding token
+  n_items: 9725 # n_items +1 (padding token)
   user_embedding_dim: 64
   item_embedding_dim: 64 
   hidden_dims: [64,64,64]

@@ -23,3 +23,5 @@ DATA_DIR:
     N_USERS: 330975
     N_MOVIES: 86000
 
+ARTIFACTS:
+  ENCODER_PATH: 'artifacts/movie_encoder.pkl'

@@ -2,6 +2,7 @@ import os
 import random
 import pandas as pd 
 from typing import List, Literal, Tuple
+from src.utils.utils import save_artifact
 
 
 
@@ -11,7 +12,7 @@ class ProcessData:
                  destination_paths:List[str], 
                  splits:List[float],
                  mode:Literal['random', 'user', 'user_time'] = 'random',
-                 encode_data:bool = False):
+                 encode_data:bool = True):
         """
         Processing Data Step.
         It split the data into two or three different sets.
@@ -43,11 +44,12 @@ class ProcessData:
 
     def process_data(self, force_process=False) -> None:
         data_in_destination = self.check_data()
+        print('data in final directory:', data_in_destination)
 
-        if (data_in_destination) and (force_process is False):
+        if (data_in_destination) and (force_process==False):
             print('Data already in local path.')
         else:
-            df = pd.read_csv(self.raw_data_path)
+            df = pd.read_csv(os.path.join(self.raw_data_path, 'ratings.csv'))
 
             if self.encode_data:
                 encoder = MovieIDEncoder()
@@ -63,6 +65,8 @@ class ProcessData:
                 dfs = self._process_per_user(df, time_aware=True)
 
             self._save_data(dfs)
+            save_artifact(self.encoder, 'artifacts/movie_encoder.pkl')
+
 
 
     def _process_random(self, df:pd.DataFrame) -> Tuple[pd.Series, ...]:
@@ -164,22 +168,14 @@ class ProcessData:
                      of destination paths."""
         for df, (split_name, path_destination) in zip(dfs, self.destination_paths.items()):
             print(f"Saving {split_name} to: {path_destination}")
-            df.to_csv(path_destination)
-
-
-    def get_encoder(self):
-        if self.encode_data:
-            return self.encoder
-        else:
-            return None
+            df.to_csv(path_destination, index=False)
 
 
     def check_data(self):
         """Check if the data is already processed at the destination path."""
-        if any([os.path.exists(path) for path in self.destination_paths]):
-            return True
-        else:
-            return False
+        exist_paths = [os.path.exists(path) for path in self.destination_paths.values()]
+
+        return all(exist_paths)
 
 
 
@@ -190,6 +186,8 @@ class MovieIDEncoder:
         
 
     def fit(self, data:list) -> None:
+        data = list(set(data))
+        data.sort()
         for idx, d in enumerate(data, 1):
             self.encoded_ids[d] = idx
             self.decoded_ids[idx] = d

@@ -98,19 +98,17 @@ class UserItemDataSampling(pl.LightningDataModule):
         val_set_path = self.data_dir_config['DATA_DIR'][data_size]['EVAL']
 
         if negative_sampling:
-            train_dataset = NegSampleDataset(data_path=train_set_path)
-            val_dataset = NegSampleDataset(data_path=val_set_path)
+            num_negatives = self.dataset_config['num_negatives']
+            train_dataset = NegSampleDataset(data_path=train_set_path, num_negatives=num_negatives)
+
         else:
             train_dataset = UserItemDataset(data_path=train_set_path)
-            val_dataset = UserItemDataset(data_path=val_set_path)
 
+        val_dataset = UserItemDataset(data_path=val_set_path)
         if testing:
             test_set_path = self.data_dir_config['DATA_DIR'][data_size]['TEST']
 
-            if negative_sampling:
-                test_dataset = NegSampleDataset(data_path=test_set_path)
-            else:
-                test_dataset = UserItemDataset(data_path=test_set_path)
+            test_dataset = UserItemDataset(data_path=test_set_path)
 
             self.test_dataset = test_dataset
 

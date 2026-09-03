@@ -39,7 +39,7 @@ class Trainer:
                  data_dir_extra_config:dict={},
                  dataset_extra_config:dict={}):
 
-        self.model_type = model_type 
+        self.model_type = model_type.lower()
         self.dataset_type = dataset_type
         self.model_config = model_config(**model_extra_config)
         self.hyperparams_config = hyperparams_config(**hyperparams_extra_config)
@@ -47,10 +47,11 @@ class Trainer:
         self.dataset_config = dataset_config(**dataset_extra_config)
         self.model = None
         self.dataloader_module = None
+        self.trainer=None
 
 
-    def train(self, max_epochs:int, save_model=True, verbose:bool=True):
-        trainer = self._get_trainer(max_epochs, save_model, verbose)
+    def train(self, max_epochs:int, save_model=True, verbose:bool=True, sanity_check_steps:int=2, profiler=None):
+        trainer = self._get_trainer(max_epochs, save_model, verbose, sanity_check_steps, profiler=profiler)
             
         trainer.fit(self.model, self.dataloader_module)
 
@@ -58,7 +59,7 @@ class Trainer:
 
 
     def setup(self, model:bool=True, dataloader:bool=False):
-        if self.model:
+        if model:
             self.model = self._get_model()
         if (self.dataloader_module is None) or (dataloader):
             self.dataloader_module = self._get_dataloader()
@@ -99,9 +100,7 @@ class Trainer:
 
 
     def evaluate(self, verbose=True):
-        trainer = self._get_trainer(max_epochs=1, save_model=False, verbose=verbose)
-        
-        results = trainer.test(self.model, self.dataloader_module, verbose=verbose)
+        results = self.trainer.test(self.model, self.dataloader_module, verbose=verbose)
         return results
 
 
@@ -123,25 +122,33 @@ class Trainer:
             raise ValueError(f"{config_settings} not supported")
 
 
-    def _get_trainer(self, max_epochs:int, save_model:bool, verbose:bool):
-        if self.trainer is None:
-            if self.model is None:
+    def _get_trainer(self, max_epochs:int, save_model:bool, verbose:bool, sanity_check_steps:int=2, profiler:str|None=None):
+        if self.model is None:
                 print('Initializing Model')
-                self.setup()
+                self.setup(model=True)
 
-            if verbose:
-                trainer = pl.Trainer(max_epochs=max_epochs, enable_checkpointing=save_model)
-                # Silence console warnings and info logs from Lightning
-                #logging.getLogger("lightning.pytorch.utilities.rank_zero").setLevel(logging.WARNING)
-                logging.getLogger("pytorch_lightning").setLevel(logging.ERROR)
+        if verbose:
+                logging.getLogger("pytorch_lightning").setLevel(logging.INFO)
 
-            else:
                 trainer = pl.Trainer(
                             max_epochs=max_epochs, 
                             enable_checkpointing=save_model,     
-                            enable_progress_bar=False,
-                            enable_model_summary=False)
+                            enable_progress_bar=True,
+                            enable_model_summary=True,
+                            num_sanity_val_steps=sanity_check_steps,
+                            profiler=profiler)
         else:
-            trainer = self.trainer
+                # Silence console warnings and info logs from Lightning
+                #logging.getLogger("lightning.pytorch.utilities.rank_zero").setLevel(logging.WARNING)
+                logging.getLogger("pytorch_lightning").setLevel(logging.ERROR)
+                trainer = pl.Trainer(
+                    max_epochs=max_epochs, 
+                    enable_checkpointing=save_model,
+                    enable_progress_bar=False,
+                    enable_model_summary=False,
+                    num_sanity_val_steps=sanity_check_steps,
+                    profiler=profiler)
+
+        
 
         return trainer

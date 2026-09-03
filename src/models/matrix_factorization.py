@@ -5,10 +5,10 @@ from torch.nn import functional as F
 
 
 class MatrixFactorization(nn.Module):
-    def __init__(self, n_users, n_items, user_embedding_dim, item_embedding_dim):
+    def __init__(self, n_users, n_items, user_item_embedding_dim):
         super(MatrixFactorization, self).__init__()
-        self.user_embedding = nn.Embedding(n_users, user_embedding_dim)
-        self.item_embedding = nn.Embedding(n_items, item_embedding_dim)
+        self.user_embedding = nn.Embedding(n_users, user_item_embedding_dim)
+        self.item_embedding = nn.Embedding(n_items, user_item_embedding_dim)
         self.user_bias = nn.Embedding(n_users, 1)
         self.item_bias = nn.Embedding(n_items, 1)
 
@@ -27,8 +27,8 @@ class DeepMatrixFactorization(nn.Module):
     def __init__(self, n_users, n_items, user_embedding_dim, item_embedding_dim, hidden_dims:list[int], dropout_rate:float) -> None:
         super().__init__()
 
-        self.user_embedding = nn.Embedding(num_embeddings=n_users, embedding_dim=user_embedding_dim)
-        self.item_embedding = nn.Embedding(num_embeddings=n_items, embedding_dim=item_embedding_dim)
+        self.user_embedding = nn.Embedding(num_embeddings=n_users, embedding_dim=user_embedding_dim, padding_idx=0)
+        self.item_embedding = nn.Embedding(num_embeddings=n_items, embedding_dim=item_embedding_dim, padding_idx=0)
 
         fc = [nn.Linear(in_features=user_embedding_dim + item_embedding_dim, out_features=hidden_dims[0]),
                                       nn.ReLU(), 
@@ -57,8 +57,9 @@ class DeepMatrixFactorization(nn.Module):
         item_embedded = self.item_embedding(item_id)
 
         x = torch.cat([user_embedded, item_embedded], dim=-1)
-        x = x.view(x.size(0), -1)
+        #x = x.view(x.size(0), -1)
         x = self.fc(x)
+        x = x.squeeze(-1)
 
         return x
 
@@ -73,8 +74,7 @@ if __name__ == '__main__':
 
     mf = MatrixFactorization(n_users=n_users, 
                              n_items=n_items, 
-                             user_embedding_dim=user_emb_size, 
-                             item_embedding_dim=item_embd_size)
+                             user_item_embedding_dim=user_emb_size+item_embd_size)
 
     deep_mf = DeepMatrixFactorization(n_users=n_users,
                                       n_items=n_items,
@@ -89,3 +89,4 @@ if __name__ == '__main__':
 
     deep_mf_output = deep_mf(user_id_batch_example, item_id_batch_example)
     print(deep_mf_output.shape)
+    print(deep_mf_output)

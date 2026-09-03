@@ -21,16 +21,12 @@ DEEP_AUTOENCODER:
     logscale: False
 
 MATRIX_FACTORIZATION:
-  user_embedding_dim: 
+  user_item_embedding_dim: 
     type: int
     low: 8
     high: 512
     step: 8
-  item_embedding_dim:
-    type: int
-    low: 8
-    high: 512
-    step: 8
+    
 
 DEEP_MATRIX_FACTORIZATION:
   user_embedding_dim: 
@@ -71,6 +67,6 @@ HYPERPARAMS:
 DATASET:
   batch_size:
     type: int
-    low: 8
-    high: 512
-    step: 8
+    low: 32
+    high: 1024
+    step: 32

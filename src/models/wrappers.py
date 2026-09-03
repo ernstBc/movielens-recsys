@@ -14,8 +14,8 @@ class AutoencoderWrapper(pl.LightningModule):
         self.config = {'lr': lr, 'weight_decay': weight_decay, 'optimizer_name': optimizer_name}
 
 
-    def forward(self, user_id, item_id):
-        return self.model(user_id, item_id)
+    def forward(self, user_vector):
+        return self.model(user_vector)
 
 
     def training_step(self, batch, batch_idx):
@@ -68,7 +68,7 @@ class AutoencoderWrapper(pl.LightningModule):
 
 
 class MatrixFactorizationWrapper(pl.LightningModule):
-    def __init__(self, model, negative_sampling:bool, optimizer_name:str, lr:float, weight_decay:float):
+    def __init__(self, model, optimizer_name:str, lr:float, weight_decay:float, negative_sampling:bool=False):
         super().__init__()
         self.model = model
         self.negative_sampling = negative_sampling

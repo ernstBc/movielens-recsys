@@ -11,4 +11,13 @@ USER_ITEM_DATASET_CONFIG:
   negative_sampling: False
   testing: True
   batch_size: 512
+  num_workers: 1
+
+NEGATIVE_SAMPLING_DATASET_CONFIG:
+  split_mode: user
+  data_size: 100K
+  negative_sampling: True
+  testing: True
+  batch_size: 64
   num_workers: 2
+  num_negatives: 4

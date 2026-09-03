@@ -105,10 +105,10 @@ class Tuner:
         self.trainer.setup()
 
         # train the model with new hyperparams
-        self.trainer.train(max_epochs=max_epochs, save_model=False, verbose=False)
+        self.trainer.train(max_epochs=max_epochs, save_model=False, verbose=True, sanity_check_steps=0)
 
         # get the results
-        results = self.trainer.evaluate(verbose=False)[0]['test_loss_epoch']
+        results = self.trainer.trainer.callback_metrics['val_loss'].item()
 
         return results
 
