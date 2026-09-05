@@ -32,14 +32,14 @@ class Trainer:
     def __init__(self, 
                  model_type:str,
                  max_epochs:int,
-                 model_kwargs:dict, 
-                 hyperparams_kwargs:dict, 
                  verbose:bool=True, 
                  sanity_check_steps:int=2, 
                  profiler:str|None=None,
                  save_model_path:str|None=None,
                  save_intermediate_ckpts:bool=True,
-                 from_checkpoint:str|None=None
+                 from_checkpoint:str|None=None,
+                 model_kwargs:dict={}, 
+                 hyperparams_kwargs:dict={}, 
     ):
 
         self.save_model_path = save_model_path

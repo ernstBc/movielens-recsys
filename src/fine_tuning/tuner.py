@@ -1,7 +1,8 @@
 import optuna
-from typing import Literal
-from src.train.trainer import Trainer, ConfigManager
+from typing import Literal, Tuple
+from src.train.trainer import Trainer
 from src.data.wrappers import UserItemDataSampling, AutoencoderSampling
+
 
 class Tuner:
     def __init__(self, 
@@ -82,19 +83,24 @@ class Tuner:
         # update the model and hyperparams dicts with the current finetuning run
         model_args = self.model_kwargs | model_params
         hyperparams_args = self.hyperparams_kwargs | hyper_params
+        trainer_args = self.trainer_kwargs | {'max_epochs': max_epochs}
 
         # get a trainer 
         trainer = Trainer(model_type=self.model_type,
                           model_kwargs=model_args,
                           hyperparams_kwargs=hyperparams_args,
-                          **self.trainer_kwargs)
+                          **trainer_args)
 
         model = trainer.get_model()
 
         # train the model with new hyperparams
         results = trainer.train(model=model, dataloader=dl)
-               
 
+        # Log tuning metrics
+        trial.set_user_attr("model_config", model_params)
+        trial.set_user_attr("hyperparams_config", hyper_params)
+        trial.set_user_attr('dataset_config', dataset_params)
+               
         # get the results
         val_loss = results['val_loss'].item()
 
@@ -107,4 +113,11 @@ class Tuner:
             n_trials=self.n_trials, 
             show_progress_bar=True)
 
+
+    def get_best_params(self) -> Tuple[dict, dict, dict]:
+           best_trial = self.study.best_trial
+           model_config = best_trial.user_attrs['model_config']
+           hyperparms_config = best_trial.user_attrs['hyperparams_config']
+           dataset_config = best_trial.user_attrs["dataset_config"]
+           return (model_config, hyperparms_config, dataset_config)
 

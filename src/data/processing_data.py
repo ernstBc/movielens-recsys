@@ -27,7 +27,7 @@ class ProcessData:
         assert len(destination_paths) == len(splits), f"Destination Path must have the same number of elements than the splits, but got {len(destination_paths)} vs {len(splits)}"
         assert len(splits) in [2, 3], 'The splits list needs 2 or 3 values'
         assert sum(splits) == 1.0, 'The sum of the splits list must sum up 1.0'
-        assert mode in ['random', 'user', 'user_time'], "mode argument only takes ['random', 'user', 'user_time'] as possible values."
+        assert mode in ['random', 'user', 'user_time'], f"mode argument only takes ['random', 'user', 'user_time'] as possible values. {mode} was used."
 
         self.raw_data_path = raw_data_path
         self.mode = mode

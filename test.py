@@ -2,6 +2,7 @@ from src.train.trainer import Trainer, ConfigManager
 from src.fine_tuning.tuner import Tuner
 from typing import Literal
 from src.pipeline.components import DataComponent, TrainerComponent, FineTuningComponent, PredictionComponent
+from src.pipeline.pipe import Pipeline
 
 
 def test_model(model_type: Literal['DEEP_MATRIX_FACTORIZATION'], dataset_type: Literal['USER_ITEM'], datasize: Literal['100K']):
@@ -74,7 +75,7 @@ def test_model_v2(
     # components
     print('init data component')
     dc = DataComponent(data_config=data_dir_config, dataset_config=dataset_config)
-    dl = dc.get_component(dataset_type=dataset_type, dataset_size=datasize, process_data=False, force_process=False)
+    dl = dc.get_component(dataset_type=dataset_type, dataset_size=datasize, process_data=False, force_process=True)
     print(dl)
 
     print('init trainer component')
@@ -118,6 +119,26 @@ def test_model_v2(
     return predicts, predicts_df
 
 
+def test_pipeline(
+        model_type,
+        dataset_type,
+        datasize):
+
+    pipeline = Pipeline(
+        model_type=model_type,
+        dataset_type=dataset_type,
+        data_size=datasize,
+        data_dir_config_path=data_dir_config_path,
+        model_config_path=model_config_path,
+        hyperparams_config_path=hyperparams_config_path,
+        trainer_config_path=trainer_config_path,
+        finetuning_config_path=finetuning_config_path,
+        dataset_config_path=dataset_config_path
+    )
+
+    pipeline.run_pipeline()
+
+
 if __name__ =='__main__':
 
     MODEL_TYPE = 'DEEP_AUTOENCODER'
@@ -140,10 +161,10 @@ if __name__ =='__main__':
 
 
 
-    preds, preds_df = test_model_v2(model_type=MODEL_TYPE, dataset_type=DATASET_TYPE, datasize=DATASIZE)
+    # preds, preds_df = test_model_v2(model_type=MODEL_TYPE, dataset_type=DATASET_TYPE, datasize=DATASIZE)
+    # print(preds)
+    # print(preds_df)
 
-    print(preds)
-    print(preds_df)
 
 
     models_type = ['AUTOENCODER', 'DEEP_AUTOENCODER', 'MATRIX_FACTORIZATION', 'DEEP_MATRIX_FACTORIZATION']
@@ -152,7 +173,13 @@ if __name__ =='__main__':
 
 
     for MODEL_TYPE, DATASET_TYPE in zip(models_type, dataset_types):
-        if ('a' =='aa'):
-            print('Model type:', MODEL_TYPE)
-            print('DATASET_TYPE:', DATASET_TYPE)
-            preds, preds_df = test_model_v2(model_type=MODEL_TYPE, dataset_type=DATASET_TYPE, datasize=DATASIZE)
+        print('-------------------- Init Pipeline -----------------------')
+        print('Model Type:', MODEL_TYPE
+              , 'Dataset Type:', DATASET_TYPE
+              , 'Data Size:', DATASIZE)
+        print('----------------------------------------------------------')
+        pipe = test_pipeline(
+        model_type=MODEL_TYPE,
+        dataset_type=DATASET_TYPE,
+        datasize=DATASIZE
+    )
