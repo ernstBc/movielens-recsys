@@ -4,13 +4,22 @@ import pandas as pd
 import numpy as np
 from src.utils.utils import load_artifact
 from torch.utils.data import TensorDataset, DataLoader
+from src.data.processing_data import MovieIDEncoder
 
 
 class PredictUserAllItems:
-    def __init__(self, n_movies, movies_encoder, movies_df):
+    def __init__(self, n_movies:int, movies_encoder:str|MovieIDEncoder, movies_df_path:str):
         self.range_movies = torch.arange(n_movies)
-        self.movies_encoder = movies_encoder
-        self.movies_df = movies_df
+        self.movies_df = pd.read_csv(movies_df_path)
+
+        if isinstance(movies_encoder, str):
+            encoder = load_artifact(movies_encoder)
+        elif isinstance(movies_encoder, MovieIDEncoder):
+            encoder = movies_encoder
+        else:
+            raise ValueError('movies_encoder should be a string or a instance of MovieIDEncoder')
+        assert isinstance(encoder, MovieIDEncoder), 'encoder must be a instance of MovieIDEncoder'
+        self.encoder = encoder
 
 
     def predict(self, model, user_id):
@@ -36,7 +45,7 @@ class PredictUserAllItems:
         values, indices = torch.topk(predictions, k=top_k)
 
         indices = indices.tolist()
-        decoded_indices = [self.movies_encoder.decode_id(decoded_idx) for decoded_idx in indices]
+        decoded_indices = [self.encoder.decode_id(decoded_idx) for decoded_idx in indices]
 
         user_data = pd.DataFrame({"movieId": decoded_indices, "scores": values.tolist()})
         user_data = user_data.merge(self.movies_df, on='movieId', how='inner')
@@ -52,9 +61,10 @@ class PredictUserAllItems:
 
 
 class PredictAutoencoderItems:
-    def __init__(self, data, movies_df):
-        self.data = data
-        self.movies_df = movies_df
+    def __init__(self, data_path:str, movies_df_path:str):
+        self.data = self._process_data(pd.read_csv(data_path))
+        self.movies_df = pd.read_csv(movies_df_path)
+
 
     def predict(self, model, user_id):
         user_ratings = torch.tensor(self.data.loc[user_id].to_numpy(), dtype=torch.float)
@@ -83,30 +93,6 @@ class PredictAutoencoderItems:
         predictions.to_csv(save_path)
 
 
-
-class Predictor:
-    def __init__(self, data_dir_config, model_config):
-        self.data_dir_config = data_dir_config()
-        self.model_config = model_config()
-
-
-    def get_predictor(self, model_type:str):
-        movies_path = self.data_dir_config['DATA_DIR']['100K']['RAW'] + '/movies.csv'
-        movies_df = pd.read_csv(movies_path)
-
-        if model_type.lower() in ['autoencoder', 'deep_autoencoder']:
-            data_dir = os.path.join(self.data_dir_config['DATA_DIR']['100K']['RAW'], 'ratings.csv')
-            data = pd.read_csv(data_dir)
-            data = data.pivot(index='userId', columns='movieId', values='rating').fillna(0)
-            predictor = PredictAutoencoderItems(data, movies_df)
-        else:
-            n_movies = self.model_config['n_items']
-            artifact_path = self.data_dir_config['ARTIFACTS']['ENCODER_PATH']
-            movies_encoder = load_artifact(artifact_path)
-            predictor = PredictUserAllItems(n_movies, movies_encoder, movies_df)
-
-        return predictor
-
-
-    
-
+    def _process_data(self, data:pd.DataFrame):
+        d = data.pivot(index = 'userId', columns='movieId', values='rating').fillna(0)
+        return d

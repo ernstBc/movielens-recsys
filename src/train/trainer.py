@@ -1,3 +1,7 @@
+import os
+import datetime 
+import logging
+
 import torch
 import pytorch_lightning as pl
 from typing import Any, Literal
@@ -5,9 +9,7 @@ from src.utils.utils import read_yaml
 from src.models.autoencoders import AutoEncoder, DeepAutoEncoder
 from src.models.matrix_factorization import MatrixFactorization, DeepMatrixFactorization
 from src.models.wrappers import AutoencoderWrapper, MatrixFactorizationWrapper
-from src.data.wrappers import AutoencoderSampling, UserItemDataSampling
 
-import logging
 
 
 class ConfigManager:
@@ -29,40 +31,57 @@ class ConfigManager:
 class Trainer:
     def __init__(self, 
                  model_type:str,
-                 dataset_type:Literal['autoencoder', 'user_item', 'negative_sampling'],
-                 model_config:ConfigManager, 
-                 hyperparams_config:ConfigManager, 
-                 data_dir_config: ConfigManager,
-                 dataset_config:ConfigManager,
-                 model_extra_config:dict={}, 
-                 hyperparams_extra_config:dict={},
-                 data_dir_extra_config:dict={},
-                 dataset_extra_config:dict={}):
+                 max_epochs:int,
+                 model_kwargs:dict, 
+                 hyperparams_kwargs:dict, 
+                 verbose:bool=True, 
+                 sanity_check_steps:int=2, 
+                 profiler:str|None=None,
+                 save_model_path:str|None=None,
+                 save_intermediate_ckpts:bool=True,
+                 from_checkpoint:str|None=None
+    ):
 
+        self.save_model_path = save_model_path
+        self.verbose = verbose
+        self.sanity_check_steps = sanity_check_steps
+        self.profiler = profiler
+        self.max_epochs = max_epochs
+        self.save_intermediate_ckpts = save_intermediate_ckpts
+        self.from_checkpoint = from_checkpoint
         self.model_type = model_type.lower()
-        self.dataset_type = dataset_type
-        self.model_config = model_config(**model_extra_config)
-        self.hyperparams_config = hyperparams_config(**hyperparams_extra_config)
-        self.data_dir_config = data_dir_config(**data_dir_extra_config)
-        self.dataset_config = dataset_config(**dataset_extra_config)
-        self.model = None
-        self.dataloader_module = None
-        self.trainer=None
+        self.model_config = model_kwargs
+        self.hyperparams_config = hyperparams_kwargs
+
+        self.trainer = self._get_trainer(max_epochs=max_epochs, 
+                                         save_model=save_intermediate_ckpts,
+                                         verbose=verbose,
+                                         sanity_check_steps=sanity_check_steps,
+                                         profiler=profiler)
 
 
-    def train(self, max_epochs:int, save_model=True, verbose:bool=True, sanity_check_steps:int=2, profiler=None):
-        trainer = self._get_trainer(max_epochs, save_model, verbose, sanity_check_steps, profiler=profiler)
-            
-        trainer.fit(self.model, self.dataloader_module)
 
-        self.trainer = trainer
+    def train(self, model, dataloader):
+        self.trainer.fit(model, dataloader)
+
+        if self.save_model_path is not None:
+            self.save_model(model, self.save_model_path)
+
+        return self.trainer.logged_metrics
 
 
-    def setup(self, model:bool=True, dataloader:bool=False):
-        if model:
-            self.model = self._get_model()
-        if (self.dataloader_module is None) or (dataloader):
-            self.dataloader_module = self._get_dataloader()
+    def get_model(self, from_path:str|None=None):
+        if from_path is not None:
+             model = self.load_model(from_path)
+        else:
+             model = self._get_model()
+        return model
+    
+
+    def evaluate(self, model, dataloader):
+        eval_metrics = self.trainer.test(model, dataloader)
+        return eval_metrics
+
 
     def _get_model(self):
         if self.model_type == 'autoencoder':
@@ -83,50 +102,23 @@ class Trainer:
         return model_pl
 
 
-    def _get_dataloader(self):
-        dataset_type = self.dataset_type
+    def save_model(self, model, save_model_path):
+        now = int(datetime.datetime.now().timestamp())
+        model_dir = os.path.join(
+            save_model_path, 
+            f'{self.model_type}_{now}.pt'
+        )
         
-        if dataset_type == 'autoencoder':
-            dataloader = AutoencoderSampling(data_dir_config=self.data_dir_config, dataset_config=self.dataset_config)
-        elif dataset_type == 'user_item':
-            dataloader = UserItemDataSampling(data_dir_config=self.data_dir_config, dataset_config=self.dataset_config)
-        elif dataset_type == 'negative_sampling':
-            dataloader = UserItemDataSampling(data_dir_config=self.data_dir_config, dataset_config=self.dataset_config)
-        else:
-            raise ValueError("Invalid dataset type")
-        
-        return dataloader
+        torch.save(model.state_dict(), model_dir)
 
 
-
-    def evaluate(self, verbose=True):
-        results = self.trainer.test(self.model, self.dataloader_module, verbose=verbose)
-        return results
-
-
-    def save_model(self, save_path:str):
-        if self.model is None:
-            raise ValueError("Model has not been initialized. Call setup() or train() first.")
-        
-        torch.save(self.model.state_dict(), save_path)
-
-
-    def reset_params(self, config_settings:str, new_params:dict):
-        if config_settings == 'model_config':
-            self.model_config.update(new_params)
-        elif config_settings == 'hyperparams_config':
-            self.hyperparams_config.update(new_params)
-        elif config_settings == 'dataset_config':
-            self.dataset_config.update(new_params)
-        else:
-            raise ValueError(f"{config_settings} not supported")
+    def load_model(self, model_path:str):
+         model = self._get_model()
+         model.load_state_dict(torch.load(model_path))
+         return model
 
 
     def _get_trainer(self, max_epochs:int, save_model:bool, verbose:bool, sanity_check_steps:int=2, profiler:str|None=None):
-        if self.model is None:
-                print('Initializing Model')
-                self.setup(model=True)
-
         if verbose:
                 logging.getLogger("pytorch_lightning").setLevel(logging.INFO)
 
@@ -148,7 +140,5 @@ class Trainer:
                     enable_model_summary=False,
                     num_sanity_val_steps=sanity_check_steps,
                     profiler=profiler)
-
-        
-
+                
         return trainer

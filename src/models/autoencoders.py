@@ -69,7 +69,6 @@ class DeepAutoEncoder(nn.Module):
         return x
 
 
-
 if __name__=='__main__':
     n_items = 9000
 
@@ -84,6 +83,3 @@ if __name__=='__main__':
 
     print(ae_output.shape)
     print(d_ae_output.shape)
-
-
-    

@@ -9,28 +9,45 @@ from src.train.customs import negative_sampling_collate_fn
 
 
 class AutoencoderSampling(pl.LightningDataModule):
-    def __init__(self, data_dir_config:dict, dataset_config:dict):
+    def __init__(self,   
+                 dataset_url:str,
+                 dataset_path:str,
+                 splits:list,
+                 dataset_name:str='ml-latest.zip', 
+                 split_mode:str='user', 
+                 negative_sampling:bool=False, 
+                 testing:bool=True,
+                 batch_size:int=512, 
+                 num_workers:int=1,
+                 process_data:bool=True):
         super().__init__()
-        self.data_dir_config = data_dir_config
-        self.dataset_config = dataset_config
+        self.dataset_url = dataset_url
+        self.dataset_path = dataset_path
+        self.dataset_name = dataset_name
+        self.splits = splits
+
+        self.split_mode = split_mode
+        self.negative_sampling = negative_sampling
+        self.testing = testing
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+        self.process_data = process_data
+
 
 
     def prepare_data(self) -> None:
-        data_size = self.dataset_config['data_size']
-        url_set = 'SMALL_URL' if data_size == '100K' else 'FULL_URL'
+        if self.process_data:
+            dataset_url = self.dataset_url
+            dataset_path = self.dataset_path
+            dataset_name = self.dataset_name
 
-        dataset_url = self.data_dir_config['DATA_URL'][url_set]
-        dataset_path = self.data_dir_config['DATA_DIR'][data_size]['RAW']
-        dataset_name = self.data_dir_config['DATA_DIR'][data_size]['NAME']
-
-        gt = GetData(dataset_url=dataset_url, dataset_path=dataset_path, dataset_name=dataset_name)
-        gt.get_data()
+            gt = GetData(dataset_url=dataset_url, dataset_path=dataset_path, dataset_name=dataset_name)
+            gt.get_data()
 
 
     def setup(self, stage: str) -> None:
-        data_size = self.dataset_config['data_size']
-        data_config_path = os.path.join(self.data_dir_config['DATA_DIR'][data_size]['RAW'], 'ratings.csv')
-        splits = self.data_dir_config['DATA_DIR'][data_size]['SPLITS']
+        data_config_path = os.path.join(self.dataset_path, 'ratings.csv')
+        splits = self.splits
         full_dataset = AutoEncoderDataset(data_path=data_config_path)
 
         train_dataset, val_dataset, test_dataset = random_split(full_dataset, splits)
@@ -38,78 +55,105 @@ class AutoencoderSampling(pl.LightningDataModule):
         self.val_dataset = val_dataset
         self.test_dataset = test_dataset
 
-
     def train_dataloader(self) -> DataLoader:
-        return DataLoader(self.train_dataset, batch_size=self.dataset_config['batch_size'], shuffle=True)
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
 
     def val_dataloader(self) -> DataLoader:
-        return DataLoader(self.val_dataset, batch_size=self.dataset_config['batch_size'], shuffle=False)
+        return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
 
     def test_dataloader(self) -> DataLoader:
-        return DataLoader(self.test_dataset, batch_size=self.dataset_config['batch_size'], shuffle=False)
+        return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
 
 
 class UserItemDataSampling(pl.LightningDataModule):
-    def __init__(self, data_dir_config:dict, dataset_config:dict, force_process:bool=False):
+    def __init__(self,   
+                 dataset_url:str,
+                 dataset_path:str,
+                 splits:list, 
+                 train_dataset_path:str,
+                 validation_dataset_path:str,
+                 test_dataset_path:str|None=None,
+                 dataset_name:str='ml-latest.zip',
+                 split_mode:Literal['random', 'user', 'user_time']='user',
+                 negative_sampling:bool=False, 
+                 testing:bool=True,
+                 batch_size:int=512, 
+                 num_workers:int=1,
+                 num_negatives:int=0,
+                 force_process=False,
+                 process_data:bool=True):
         super().__init__()
 
-        self.data_dir_config = data_dir_config
-        self.dataset_config = dataset_config
+        self.dataset_url = dataset_url
+        self.dataset_path = dataset_path
+        self.dataset_name = dataset_name
+        self.splits = splits
+        self.train_dataset_path = train_dataset_path
+        self.validation_dataset_path = validation_dataset_path
+        self.test_dataset_path = test_dataset_path
+
+        self.split_mode = split_mode
+        self.negative_sampling = negative_sampling
+        self.testing = testing
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+        self.num_negatives = num_negatives
         self.force_process = force_process
+        self.process_data = process_data
+
+
+        assert split_mode in ['random', 'user', 'user_time'], "split mode must be one of the possible values ['random', 'user', 'user_time']"
 
 
     def prepare_data(self) -> None:
-        data_size = self.dataset_config['data_size']
-        url_set = 'SMALL_URL' if data_size == '100K' else 'FULL_URL'
-        split_mode = self.dataset_config['split_mode']
-        testing = self.dataset_config['testing']
+        if self.process_data:
+            split_mode = Literal[self.split_mode]
+            testing = self.testing
 
-        dataset_url = self.data_dir_config['DATA_URL'][url_set]
-        dataset_path = self.data_dir_config['DATA_DIR'][data_size]['RAW']
-        dataset_name = self.data_dir_config['DATA_DIR'][data_size]['NAME']
+            dataset_url = self.dataset_url
+            dataset_path = self.dataset_path
+            dataset_name = self.dataset_name
 
-        gt = GetData(dataset_url=dataset_url, dataset_path=dataset_path, dataset_name=dataset_name)
-        gt.get_data()
+            gt = GetData(dataset_url=dataset_url, dataset_path=dataset_path, dataset_name=dataset_name)
+            gt.get_data()
 
-        splits = self.data_dir_config['DATA_DIR'][data_size]['SPLITS']
-        train_set_path = self.data_dir_config['DATA_DIR'][data_size]['TRAIN']
-        val_set_path = self.data_dir_config['DATA_DIR'][data_size]['EVAL']
-        test_set_path = self.data_dir_config['DATA_DIR'][data_size]['TEST']
-        destination_paths = [train_set_path, val_set_path, test_set_path]
+            splits = self.splits
+            train_set_path = self.train_dataset_path
+            val_set_path = self.validation_dataset_path
+            test_set_path = self.test_dataset_path
+            destination_paths = [train_set_path, val_set_path, test_set_path]
 
-        if (len(splits)==3) and (testing is False):
-            splits = [splits[0], splits[1] + splits[2]]
-            destination_paths.pop()
+            if (len(splits)==3) and (testing is False):
+                splits = [splits[0], splits[1] + splits[2]]
+                destination_paths.pop()
 
-        pd = ProcessData(raw_data_path=dataset_path,
-                         destination_paths=destination_paths, 
-                         splits=splits, 
-                         mode=split_mode)
+            pd = ProcessData(raw_data_path=dataset_path,
+                            destination_paths=destination_paths, 
+                            splits=splits, 
+                            mode=split_mode)
 
-        pd.process_data(force_process=self.force_process)
+            pd.process_data(force_process=self.force_process)
 
 
     def setup(self, stage: str) -> None:
-        data_size = self.dataset_config['data_size']
-        negative_sampling = self.dataset_config['negative_sampling']
-        testing = self.dataset_config['testing']
+        negative_sampling = self.negative_sampling
+        testing = self.testing
 
-        train_set_path = self.data_dir_config['DATA_DIR'][data_size]['TRAIN']
-        val_set_path = self.data_dir_config['DATA_DIR'][data_size]['EVAL']
+        train_set_path = self.train_dataset_path
+        val_set_path = self.validation_dataset_path
 
         if negative_sampling:
-            num_negatives = self.dataset_config['num_negatives']
+            num_negatives = self.num_negatives
             train_dataset = NegSampleDataset(data_path=train_set_path, num_negatives=num_negatives)
 
         else:
             train_dataset = UserItemDataset(data_path=train_set_path)
 
         val_dataset = UserItemDataset(data_path=val_set_path)
-        if testing:
-            test_set_path = self.data_dir_config['DATA_DIR'][data_size]['TEST']
 
+        if testing and self.test_dataset_path is not None:
+            test_set_path = self.test_dataset_path
             test_dataset = UserItemDataset(data_path=test_set_path)
-
             self.test_dataset = test_dataset
 
         self.train_dataset = train_dataset
@@ -118,28 +162,28 @@ class UserItemDataSampling(pl.LightningDataModule):
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(self.train_dataset, 
-                          batch_size=self.dataset_config['batch_size'], 
+                          batch_size=self.batch_size, 
                           shuffle=True,
-                          num_workers=self.dataset_config['num_workers'],
+                          num_workers=self.num_workers,
                           collate_fn=negative_sampling_collate_fn if isinstance(self.train_dataset, NegSampleDataset) else None)
 
     def val_dataloader(self) -> DataLoader:
         return DataLoader(self.val_dataset, 
-                          batch_size=self.dataset_config['batch_size'], 
+                          batch_size=self.batch_size, 
                           shuffle=False,
-                          num_workers=self.dataset_config['num_workers'],
+                          num_workers=self.num_workers,
                           collate_fn=negative_sampling_collate_fn if isinstance(self.val_dataset, NegSampleDataset) else None)
 
     def test_dataloader(self) -> DataLoader:
-        if self.dataset_config['testing']:
+        if self.testing:
             return DataLoader(self.test_dataset, 
-                              batch_size=self.dataset_config['batch_size'], 
+                              batch_size=self.batch_size, 
                               shuffle=False,
-                              num_workers=self.dataset_config['num_workers'],
+                              num_workers=self.num_workers,
                               collate_fn=negative_sampling_collate_fn if isinstance(self.test_dataset, NegSampleDataset) else None)
         else:
             return DataLoader(self.val_dataset, 
-                              batch_size=self.dataset_config['batch_size'], 
+                              batch_size=self.batch_size, 
                               shuffle=False,
-                              num_workers=self.dataset_config['num_workers'],
+                              num_workers=self.num_workers,
                               collate_fn=negative_sampling_collate_fn if isinstance(self.val_dataset, NegSampleDataset) else None)

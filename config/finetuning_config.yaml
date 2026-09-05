@@ -1,4 +1,4 @@
-# models
+# models params
 AUTOENCODER:
   hidden_dim: 
     type: int
@@ -52,6 +52,7 @@ DEEP_MATRIX_FACTORIZATION:
     high: 0.9
     logscale: False
 
+# hyperparams
 HYPERPARAMS:
   lr:
     type: float
@@ -64,6 +65,8 @@ HYPERPARAMS:
     high: 0.02
     logscale: True
 
+
+# dataset params
 DATASET:
   batch_size:
     type: int

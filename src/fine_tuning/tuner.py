@@ -1,6 +1,7 @@
 import optuna
-from src.train.trainer import Trainer, ConfigManager
 from typing import Literal
+from src.train.trainer import Trainer, ConfigManager
+from src.data.wrappers import UserItemDataSampling, AutoencoderSampling
 
 class Tuner:
     def __init__(self, 
@@ -8,26 +9,21 @@ class Tuner:
                  n_trials:int,
                  model_type:str,
                  dataset_type:Literal['autoencoder', 'user_item', 'negative_sampling'],
-                 finetuning_config:ConfigManager,
-                 model_config:ConfigManager,
-                 hyperparams_config:ConfigManager,
-                 data_dir_config: ConfigManager,
-                 dataset_config:ConfigManager,
+                 fine_tuning_config:dict,
+                 model_kwargs:dict,
+                 hyperparams_kwargs:dict,
+                 trainer_kwargs:dict,
                  storage:str|None = None,
                  pruner:bool=False):
 
 
         self.model_type = model_type
-        self.finetuning_config = finetuning_config()
+        self.dataset_type = dataset_type
+        self.model_kwargs = model_kwargs
+        self.fine_tuning_config = fine_tuning_config
+        self.hyperparams_kwargs = hyperparams_kwargs
+        self.trainer_kwargs = trainer_kwargs
         self.n_trials = n_trials
-        self.trainer = Trainer(
-            model_type=model_type,
-            dataset_type=dataset_type,
-            model_config=model_config,
-            hyperparams_config=hyperparams_config,
-            data_dir_config=data_dir_config,
-            dataset_config=dataset_config
-        )
 
         if storage is not None:
             if pruner:
@@ -47,74 +43,68 @@ class Tuner:
             self.study = optuna.create_study(study_name=study_name, load_if_exists=True)
 
 
-    def _objective(self, trial, max_epochs:int):
+    def _objective(self, trial, dataloder:UserItemDataSampling|AutoencoderSampling, max_epochs:int):
+        def get_params(trial, PARAMS_TO_TUNE:str):
+            params_finetuning = {}
+            for param_name, param_config in self.fine_tuning_config[PARAMS_TO_TUNE.upper()].items():
+                if param_config['type'] == 'categorical':
+                            params_finetuning[param_name] = trial.suggest_categorical(param_name, param_config['values'])
+                elif param_config['type'] == 'int':
+                            params_finetuning[param_name] = trial.suggest_int(param_name, param_config['low'], param_config['high'])
+                elif param_config['type'] == 'float':
+                            params_finetuning[param_name] = trial.suggest_float(param_name, param_config['low'], param_config['high'], log=param_config['logscale'] )
+                elif param_config['type'] == 'list_int':
+                            params_finetuning[param_name] = [trial.suggest_int(f"{param_name}_{i+1}", param_config['low'], param_config['high'], step=param_config['step'])
+                                                             for i in range(
+                                                                            trial.suggest_int(f"{param_name}_nlist", 
+                                                                            param_config['min_elements'], 
+                                                                            param_config['max_elements'])
+                                                                            )
+                                                        ]
+                else:
+                            raise ValueError(f"Unsupported parameter type: ;{param_config['type']};")
+            return params_finetuning
+            
         # Model Params Grid
-        model_params = {}
-        for param_name, param_config in self.finetuning_config[self.model_type.upper()].items():
-            if param_config['type'] == 'categorical':
-                model_params[param_name] = trial.suggest_categorical(param_name, param_config['values'])
-            elif param_config['type'] == 'int':
-                model_params[param_name] = trial.suggest_int(param_name, param_config['low'], param_config['high'])
-            elif param_config['type'] == 'float':
-                model_params[param_name] = trial.suggest_float(param_name, param_config['low'], param_config['high'], log=param_config['logscale'] )
-            elif param_config['type'] == 'list_int':
-                model_params[param_name] = [trial.suggest_int(f"{param_name}_{i+1}", param_config['low'], param_config['high'], step=param_config['step'])
-                                                 for i in range(
-                                                                trial.suggest_int(f"{param_name}_nlist", 
-                                                                param_config['min_elements'], 
-                                                                param_config['max_elements'])
-                                                                )
-                                            ]
-            else:
-                raise ValueError(f"Unsupported parameter type: ;{param_config['type']};")
+        model_params = get_params(trial, self.model_type)
 
         # Hypermeters Grid
-        hyper_params = {}
-        for param_name, param_config in self.finetuning_config['HYPERPARAMS'].items():
-            if param_config['type'] == 'categorical':
-                hyper_params[param_name] = trial.suggest_categorical(param_name, param_config['values'])
-            elif param_config['type'] == 'int':
-                hyper_params[param_name] = trial.suggest_int(param_name, param_config['low'], param_config['high'], step=param_config['step'])
-            elif param_config['type'] == 'float':
-                hyper_params[param_name] = trial.suggest_float(param_name, param_config['low'], param_config['high'])
-            elif param_config['type'] == 'list_int':
-                hyper_params[param_name] = [trial.suggest_int(param_name, param_config['low'], param_config['high'], step=param_config['step'])
-                                             for _ in range(trial.suggest_int(f"{param_name}_nlist", param_config['min_elements']), param_config['max_elements'])]
-            else:
-                raise ValueError(f"Unsupported parameter type: '{param_config['type']}'")
+        hyper_params = get_params(trial, 'HYPERPARAMS')
 
-        # Dataset hyperparams Grid
-        dataset_params = {}
-        for param_name, param_config in self.finetuning_config['DATASET'].items():
-            if param_config['type'] == 'categorical':
-                dataset_params[param_name] = trial.suggest_categorical(param_name, param_config['values'])
-            elif param_config['type'] == 'int':
-                dataset_params[param_name] = trial.suggest_int(param_name, param_config['low'], param_config['high'], step=param_config['step'])
-            elif param_config['type'] == 'float':
-                dataset_params[param_name] = trial.suggest_float(param_name, param_config['low'], param_config['high'])
-            elif param_config['type'] == 'list_int':
-                dataset_params[param_name] = [trial.suggest_int(param_name, param_config['low'], param_config['high'], step=param_config['step'])
-                                             for _ in range(trial.suggest_int(f"{param_name}_nlist", param_config['min_elements']), param_config['max_elements'])]
-            else:
-                raise ValueError(f"Unsupported parameter type: '{param_config['type']}'")
+        # Dataset hyperparams Grid JUST BATCH SIZE PARAMETER ALLOWED
+        dataset_params = get_params(trial, 'DATASET')
+        BATCH_SIZE = dataset_params['batch_size']
 
-        # Reset the trainer params 
-        self.trainer.reset_params('model_config', model_params)
-        self.trainer.reset_params('hyperparams_config', hyper_params)
-        self.trainer.reset_params('dataset_config', dataset_params)
-        self.trainer.setup()
+        # update the batch_size
+        dl = dataloder
+        dl.batch_size = BATCH_SIZE
+
+        # update the model and hyperparams dicts with the current finetuning run
+        model_args = self.model_kwargs | model_params
+        hyperparams_args = self.hyperparams_kwargs | hyper_params
+
+        # get a trainer 
+        trainer = Trainer(model_type=self.model_type,
+                          model_kwargs=model_args,
+                          hyperparams_kwargs=hyperparams_args,
+                          **self.trainer_kwargs)
+
+        model = trainer.get_model()
 
         # train the model with new hyperparams
-        self.trainer.train(max_epochs=max_epochs, save_model=False, verbose=True, sanity_check_steps=0)
+        results = trainer.train(model=model, dataloader=dl)
+               
 
         # get the results
-        results = self.trainer.trainer.callback_metrics['val_loss'].item()
+        val_loss = results['val_loss'].item()
 
-        return results
+        return val_loss
 
 
-    def search_params(self, max_epochs:int):
+    def search_params(self, dataloader,max_epochs:int):
         self.study.optimize(
-            lambda trial: self._objective(trial, max_epochs), 
+            lambda trial: self._objective(trial, dataloader, max_epochs), 
             n_trials=self.n_trials, 
             show_progress_bar=True)
+
+

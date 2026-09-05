@@ -4,7 +4,7 @@
 
 * add a function to save the hyperparameters obtained from the finetuner component
 * add a function to continue the hyperparameters search in the finetuner component (storage argument)
-* Reimplement trainer class to split the trainer component into data and training components
+* [CHECK] Reimplement trainer class to split the trainer component into data and training components 
 * Implement iterable versions of the datasets
 * Implement NeuFM algorithm
 * check 10M dataset against all the implemented models

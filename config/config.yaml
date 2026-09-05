@@ -9,6 +9,7 @@ DATA_DIR:
     TRAIN: data/100k/train/ratings.csv
     TEST: data/100k/test/ratings.csv
     EVAL: data/100k/eval/ratings.csv
+    MOVIES_PATH: data/100k/raw/movies.csv
     SPLITS: [0.7, 0.15, 0.15]
     N_USERS: 610
     N_MOVIES: 9724
@@ -19,6 +20,7 @@ DATA_DIR:
     TRAIN: data/10M/train/ratings.csv
     TEST: data/10M/test/ratings.csv
     EVAL: data/10M/eval/ratings.csv
+    MOVIES_PATH: data/10M/raw/movies.csv
     SPLITS: [0.8, 0.1, 0.1]
     N_USERS: 330975
     N_MOVIES: 86000

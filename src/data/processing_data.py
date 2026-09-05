@@ -199,12 +199,3 @@ class MovieIDEncoder:
 
     def decode_id(self, idx:int) -> int:
         return self.decoded_ids[idx]
-
-
-
-
-
-if __name__ == '__main__':
-    pass
-
-

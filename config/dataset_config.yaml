@@ -1,6 +1,6 @@
 # Default values for dataset configuration
 AUTOENCODER_DATASET_CONFIG:
-  split_mode: random
+  split_mode: user
   data_size: 100K
   batch_size: 32
   num_workers: 2
