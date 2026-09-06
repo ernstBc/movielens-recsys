@@ -83,13 +83,14 @@ class Tuner:
         # update the model and hyperparams dicts with the current finetuning run
         model_args = self.model_kwargs | model_params
         hyperparams_args = self.hyperparams_kwargs | hyper_params
-        trainer_args = self.trainer_kwargs | {'max_epochs': max_epochs}
+       
+        self.trainer_kwargs['max_epochs'] = max_epochs
 
         # get a trainer 
         trainer = Trainer(model_type=self.model_type,
                           model_kwargs=model_args,
                           hyperparams_kwargs=hyperparams_args,
-                          **trainer_args)
+                          **self.trainer_kwargs)
 
         model = trainer.get_model()
 

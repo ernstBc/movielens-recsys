@@ -23,6 +23,7 @@ class Pipeline:
         self.hyperparams_config = ConfigManager(hyperparams_config_path)
         self.trainer_config = ConfigManager(trainer_config_path)
 
+        self.finetuning_config = None
         if finetuning_config_path is not None:
             self.finetuning_config = ConfigManager(finetuning_config_path)
 
@@ -35,7 +36,8 @@ class Pipeline:
                      data_dir_kwargs:dict={},
                      trainer_kwargs:dict={},
                      finetuning_kwargs:dict={},
-                     max_epochs_finetuning:int=2):
+                     max_epochs_finetuning:int=2,
+                     n_trials:int=50):
 
 
         # set pipeline components
@@ -64,11 +66,11 @@ class Pipeline:
             )
             tuner = ftc.get_component(
                 study_name=self.model_type,
-                n_trials=1,
+                n_trials=n_trials,
                 model_type=self.model_type,
-                dataset_type=self.dataset_type,
+                dataset_type=self.dataset_type, # type: ignore
                 trainer_kwargs=trainer_kwargs ,
-                storage=None
+                storage=None,
             )
             # 
             tuner.search_params(dataloader=dataloader, max_epochs=max_epochs_finetuning)
@@ -79,6 +81,7 @@ class Pipeline:
         model_args = self.model_config(**model_kwargs) | model_extra_config
         hyper_args = self.hyperparams_config(**hyperparams_kwargs) | hyperparams_extra_config
         dataset_args = self.dataset_config() | dataset_extra_config
+        trainer_args  = self.trainer_config () | {"max_epochs": max_epochs}
 
         
 
@@ -89,7 +92,7 @@ class Pipeline:
         )
         trainer = tc.get_component(
             model_type=self.model_type,
-            trainer_kwargs=trainer_kwargs,
+            trainer_kwargs=trainer_args,
             hyperparams_config=hyper_args,
             model_kwargs=model_args,
         )

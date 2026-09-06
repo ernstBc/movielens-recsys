@@ -27,7 +27,7 @@ class ProcessData:
         assert len(destination_paths) == len(splits), f"Destination Path must have the same number of elements than the splits, but got {len(destination_paths)} vs {len(splits)}"
         assert len(splits) in [2, 3], 'The splits list needs 2 or 3 values'
         assert sum(splits) == 1.0, 'The sum of the splits list must sum up 1.0'
-        assert mode in ['random', 'user', 'user_time'], f"mode argument only takes ['random', 'user', 'user_time'] as possible values. {mode} was used."
+        assert mode in ['random', 'user', 'user_time'], f"mode argument only takes srtings: 'random', 'user' and 'user_time' as possible values. {mode} was used."
 
         self.raw_data_path = raw_data_path
         self.mode = mode
@@ -68,8 +68,7 @@ class ProcessData:
             save_artifact(self.encoder, 'artifacts/movie_encoder.pkl')
 
 
-
-    def _process_random(self, df:pd.DataFrame) -> Tuple[pd.Series, ...]:
+    def _process_random(self, df:pd.DataFrame) -> Tuple[pd.DataFrame, ...]:
         """
         Split the data randomly into two or three sets.
         
@@ -114,7 +113,8 @@ class ProcessData:
             user_id = row[0]
             values = row[1].values
 
-            len_row = len(values[0])
+
+            len_row = get_len_list(values[0])
 
             train_size = int(self.splits[0] * len_row)
             val_size = int(self.splits[1] * len_row) 
@@ -161,7 +161,7 @@ class ProcessData:
         return train_df, val_df
 
 
-    def _save_data(self, dfs: Tuple[pd.DataFrame]) -> None:
+    def _save_data(self, dfs: Tuple[pd.DataFrame, ...]) -> None:
         """Saves the datasets.
             Args:
                 dfs: Tuple of pandas DataFrame. The number of dataframes must match the length 
@@ -176,7 +176,6 @@ class ProcessData:
         exist_paths = [os.path.exists(path) for path in self.destination_paths.values()]
 
         return all(exist_paths)
-
 
 
 class MovieIDEncoder:
@@ -199,3 +198,8 @@ class MovieIDEncoder:
 
     def decode_id(self, idx:int) -> int:
         return self.decoded_ids[idx]
+
+
+def get_len_list(list):
+    """Useless function. Just to deactivate pythons hint warnings"""
+    return len(list)

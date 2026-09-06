@@ -1,53 +1,7 @@
-from src.train.trainer import Trainer, ConfigManager
-from src.fine_tuning.tuner import Tuner
-from typing import Literal
+from src.train.trainer import ConfigManager
 from src.pipeline.components import DataComponent, TrainerComponent, FineTuningComponent, PredictionComponent
 from src.pipeline.pipe import Pipeline
 
-
-def test_model(model_type: Literal['DEEP_MATRIX_FACTORIZATION'], dataset_type: Literal['USER_ITEM'], datasize: Literal['100K']):
-    # Load model configuration
-    model_config = ConfigManager(model_config_path, config_settings=model_type+'_CONFIG')
-    
-    # Load dataset configuration
-    dataset_config = ConfigManager(dataset_config_path, config_settings=dataset_type+'_DATASET_CONFIG')
-    
-    # Load hyperparameters configuration
-    hyperparams_config = ConfigManager(hyperparams_config_path)
-
-    # load data dir configuration
-    data_dir_config = ConfigManager(data_dir_config_path)
-
-    # Load finetuning configuration
-    finetuning_config = ConfigManager(finetuning_config_path)
-
-    # Initialize the trainer
-    trainer = Trainer(model_type, 
-                      dataset_type.lower(), 
-                      model_config=model_config, 
-                      hyperparams_config=hyperparams_config,
-                      data_dir_config=data_dir_config,
-                      dataset_config=dataset_config,)
-    
-    # Train the model
-    trainer.train(max_epochs=2)
-    print('Trainer Process check.')
-    
-    # Fine-tune the model
-    tuner = Tuner('test', 2, model_type, dataset_type.lower(), finetuning_config, model_config,
-                  hyperparams_config, data_dir_config, dataset_config)
-    tuner.search_params(max_epochs=1)
-    print('Finetuner process Check')
-    
-    # Predict items for a user
-    
-    p = Predictor(data_dir_config, model_config)
-    predictor = p.get_predictor(model_type=MODEL_TYPE)
-    predictions = predictor.predict(trainer.model, user_id=12)  # Example user_id
-    preds_df = predictor.get_predicted_items(predictions)
-    print('Prediction Component Check')
-
-    return predictions, preds_df
 
 
 def test_model_v2(
