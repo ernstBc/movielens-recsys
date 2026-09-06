@@ -1,8 +1,11 @@
 ,movieId,scores,title,genres
-0,431,3.7770185470581055,Carlito's Way (1993),Crime|Drama
-1,1054,3.544981002807617,Get on the Bus (1996),Drama
-2,4350,3.440666913986206,Forgotten Silver (1996),Comedy|Documentary
-3,1747,3.2189700603485107,Wag the Dog (1997),Comedy
-4,2290,3.1721913814544678,Stardust Memories (1980),Comedy|Drama
-5,3998,3.01785945892334,Proof of Life (2000),Drama
-6,8861,2.9990577697753906,Resident Evil: Apocalypse (2004),Action|Horror|Sci-Fi|Thriller
+0,54503,8.86917495727539,Superbad (2007),Comedy
+1,8957,8.556269645690918,Saw (2004),Horror|Mystery|Thriller
+2,78893,8.066621780395508,"Last Airbender, The (2010)",Action|Adventure|Fantasy
+3,4975,8.024444580078125,Vanilla Sky (2001),Mystery|Romance|Sci-Fi|Thriller
+4,1188,7.985939979553223,Strictly Ballroom (1992),Comedy|Romance
+5,3513,7.94559907913208,Rules of Engagement (2000),Drama|Thriller
+6,112852,7.817384243011475,Guardians of the Galaxy (2014),Action|Adventure|Sci-Fi
+7,40815,7.786391735076904,Harry Potter and the Goblet of Fire (2005),Adventure|Fantasy|Thriller|IMAX
+8,4896,7.763016223907471,Harry Potter and the Sorcerer's Stone (a.k.a. Harry Potter and the Philosopher's Stone) (2001),Adventure|Children|Fantasy
+9,8910,7.542949199676514,I Heart Huckabees (2004),Comedy

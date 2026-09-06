@@ -74,7 +74,7 @@ class UserItemDataSampling(pl.LightningDataModule):
                  validation_dataset_path:str,
                  test_dataset_path:str|None=None,
                  dataset_name:str='ml-latest.zip',
-                 split_mode:Literal['random', 'user', 'user_time']='user',
+                 split_mode:str='user',
                  negative_sampling:bool=False, 
                  testing:bool=True,
                  batch_size:int=512, 
@@ -101,13 +101,12 @@ class UserItemDataSampling(pl.LightningDataModule):
         self.force_process = force_process
         self.process_data = process_data
 
-
-        assert split_mode in ['random', 'user', 'user_time'], "split mode must be one of the possible values ['random', 'user', 'user_time']"
+        assert split_mode in ['random', 'user', 'user_time'], "split mode must be one of the possible values ['random', 'user', 'user_time']. {split_mode} was used."
 
 
     def prepare_data(self) -> None:
         if self.process_data:
-            split_mode = Literal[self.split_mode]
+            split_mode = self.split_mode
             testing = self.testing
 
             dataset_url = self.dataset_url

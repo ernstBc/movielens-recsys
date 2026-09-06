@@ -8,6 +8,7 @@ from typing import Any, Literal
 from src.utils.utils import read_yaml
 from src.models.autoencoders import AutoEncoder, DeepAutoEncoder
 from src.models.matrix_factorization import MatrixFactorization, DeepMatrixFactorization
+from src.models.neumf import NeuMF
 from src.models.wrappers import AutoencoderWrapper, MatrixFactorizationWrapper
 
 
@@ -96,6 +97,10 @@ class Trainer:
         elif self.model_type == 'deep_matrix_factorization':
             model = DeepMatrixFactorization(**self.model_config)
             model_pl = MatrixFactorizationWrapper(model, **self.hyperparams_config)
+        elif self.model_type == 'neumf':
+            model = NeuMF(**self.model_config)
+            model_pl = MatrixFactorizationWrapper(model, **self.hyperparams_config)
+
         else:
             raise ValueError("Invalid model type")
         

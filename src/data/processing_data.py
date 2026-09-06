@@ -11,8 +11,8 @@ class ProcessData:
                  raw_data_path:str, 
                  destination_paths:List[str], 
                  splits:List[float],
-                 mode:Literal['random', 'user', 'user_time'] = 'random',
-                 encode_data:bool = True):
+                 mode:str='random',
+                 encode_data:bool=True):
         """
         Processing Data Step.
         It split the data into two or three different sets.

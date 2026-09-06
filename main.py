@@ -10,8 +10,8 @@ parser.add_argument("--finetuning", type=bool, default=False, help="Do finetunin
 parser.add_argument('--model_type', 
                     type=str, 
                     default='DEEP_MATRIX_FACTORIZATION', 
-                    choices=['autoencoder', 'deep_autoencoder', 'matrix_factorization', 'deep_matrix_factorization'],
-                    help="Model Name ['autoencoder', 'deep_autoencoder', 'matrix_factorization', 'deep_matrix_factorization']")
+                    choices=['autoencoder', 'deep_autoencoder', 'matrix_factorization', 'deep_matrix_factorization', 'neumf'],
+                    help="Model Name ['autoencoder', 'deep_autoencoder', 'matrix_factorization', 'deep_matrix_factorization', 'neumf]")
 parser.add_argument('--dataset_type', 
                     type=str, 
                     default='USER_ITEM', 
@@ -72,5 +72,5 @@ def main():
 
 
 
-if __name__ == '__main__':
+if __name__=='__main__':
     main()

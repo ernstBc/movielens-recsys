@@ -52,6 +52,23 @@ DEEP_MATRIX_FACTORIZATION:
     high: 0.9
     logscale: False
 
+NEUMF:
+  embedding_dim:
+    type: int
+    low: 32
+    high: 512
+    step: 32
+  n_hidden_layers:
+    type: int
+    low: 1
+    high: 5
+    step: 1
+  dropout_rate:
+    type: float
+    low: 0
+    high: 0.9
+    logscale: False
+
 # hyperparams
 HYPERPARAMS:
   lr:

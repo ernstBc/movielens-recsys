@@ -74,10 +74,7 @@ class MatrixFactorizationWrapper(pl.LightningModule):
         self.negative_sampling = negative_sampling
         self.config = {'lr': lr, 'weight_decay': weight_decay, 'optimizer_name': optimizer_name}
 
-        if negative_sampling:
-            self.loss_fn = nn.MSELoss()
-        else:
-            self.loss_fn = MaskedMSELoss()
+        self.loss_fn = nn.MSELoss()
 
 
     def forward(self, batch):

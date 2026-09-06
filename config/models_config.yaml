@@ -19,3 +19,11 @@ DEEP_MATRIX_FACTORIZATION_CONFIG:
   item_embedding_dim: 64 
   hidden_dims: [64,64,64]
   dropout_rate: 0.5
+
+
+NEUMF_CONFIG:
+  n_users: 611 # n_user + 1 padding token
+  n_items: 9725 # n_items +1 (padding token)
+  embedding_dim: 64
+  n_hidden_layers: 2
+  dropout_rate: 0.5
