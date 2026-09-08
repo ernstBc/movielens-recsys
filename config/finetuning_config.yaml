@@ -2,8 +2,8 @@
 AUTOENCODER:
   hidden_dim: 
     type: int
-    low: 8
-    high: 512
+    low: 256
+    high: 384
     step: 8
 
 DEEP_AUTOENCODER:
@@ -17,7 +17,7 @@ DEEP_AUTOENCODER:
   dropout_rate:
     type: float
     low: 0.2
-    high: 0.5
+    high: 0.6
     logscale: False
 
 MATRIX_FACTORIZATION:
@@ -48,8 +48,8 @@ DEEP_MATRIX_FACTORIZATION:
     max_elements: 5
   dropout_rate:
     type: float
-    low: 0
-    high: 0.9
+    low: 0.2
+    high: 0.6
     logscale: False
 
 NEUMF:
@@ -65,22 +65,25 @@ NEUMF:
     step: 1
   dropout_rate:
     type: float
-    low: 0
-    high: 0.9
+    low: 0.2
+    high: 0.6
     logscale: False
 
 # hyperparams
 HYPERPARAMS:
   lr:
     type: float
-    low: 0.00001
+    low: 0.0001
     high: 0.01
     logscale: True
   weight_decay:
     type: float
-    low: 0.00006
-    high: 0.02
+    low: 0.0006
+    high: 0.006
     logscale: True
+  optimizer_name: 
+    type: categorical
+    values: [adam, nadam, adamw, rmsprop]
 
 
 # dataset params
@@ -88,5 +91,5 @@ DATASET:
   batch_size:
     type: int
     low: 32
-    high: 1024
+    high: 512
     step: 32

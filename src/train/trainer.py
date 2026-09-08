@@ -1,6 +1,7 @@
 import os
 import datetime 
-import logging
+from src.logger import logging as l
+logging = l.getLogger(__name__)
 
 import torch
 import pytorch_lightning as pl
@@ -36,14 +37,12 @@ class Trainer:
                  verbose:bool=True, 
                  sanity_check_steps:int=2, 
                  profiler:str|None=None,
-                 save_model_path:str|None=None,
                  save_intermediate_ckpts:bool=True,
                  from_checkpoint:str|None=None,
                  model_kwargs:dict={}, 
                  hyperparams_kwargs:dict={}, 
     ):
 
-        self.save_model_path = save_model_path
         self.verbose = verbose
         self.sanity_check_steps = sanity_check_steps
         self.profiler = profiler
@@ -64,9 +63,6 @@ class Trainer:
 
     def train(self, model, dataloader):
         self.trainer.fit(model, dataloader)
-
-        if self.save_model_path is not None:
-            self.save_model(model, self.save_model_path)
 
         return self.trainer.logged_metrics
 
@@ -107,12 +103,15 @@ class Trainer:
         return model_pl
 
 
-    def save_model(self, model, save_model_path):
+    def save_model(self, model, save_model_path:str):
         now = int(datetime.datetime.now().timestamp())
-        model_dir = os.path.join(
-            save_model_path, 
-            f'{self.model_type}_{now}.pt'
-        )
+        name = f'{self.model_type}_{now}.pt'
+
+        print('save_model_path', save_model_path)
+        print('name', name)
+
+
+        model_dir = os.path.join(save_model_path, name)
         
         torch.save(model.state_dict(), model_dir)
 
@@ -125,7 +124,7 @@ class Trainer:
 
     def _get_trainer(self, max_epochs:int, save_model:bool, verbose:bool, sanity_check_steps:int=2, profiler:str|None=None):
         if verbose:
-                logging.getLogger("pytorch_lightning").setLevel(logging.INFO)
+                l.getLogger("pytorch_lightning").setLevel(l.INFO)
 
                 trainer = pl.Trainer(
                             max_epochs=max_epochs, 
@@ -137,7 +136,7 @@ class Trainer:
         else:
                 # Silence console warnings and info logs from Lightning
                 #logging.getLogger("lightning.pytorch.utilities.rank_zero").setLevel(logging.WARNING)
-                logging.getLogger("pytorch_lightning").setLevel(logging.ERROR)
+                l.getLogger("pytorch_lightning").setLevel(l.ERROR)
                 trainer = pl.Trainer(
                     max_epochs=max_epochs, 
                     enable_checkpointing=save_model,

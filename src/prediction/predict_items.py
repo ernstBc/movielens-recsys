@@ -1,4 +1,7 @@
 import os
+from src.logger import logging as l
+logging = l.getLogger(__name__)
+
 import torch
 import pandas as pd
 import numpy as np

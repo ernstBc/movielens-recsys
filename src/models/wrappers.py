@@ -1,3 +1,6 @@
+from src.logger import logging as l
+logging = l.getLogger(__name__)
+
 from typing import Any
 import torch
 import pytorch_lightning as pl

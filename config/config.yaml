@@ -27,3 +27,14 @@ DATA_DIR:
 
 ARTIFACTS:
   ENCODER_PATH: 'artifacts/movie_encoder.pkl'
+
+REGISTRY:
+  storage: 'sqlite:///model_registry/registry.db'
+  best_models_params: 'model_registry/best_params/'
+  models: 'model_registry/models/'
+
+PREDICTIONS:
+  100K:
+    PATH: 'data/100k/predictions/'
+  10M:
+    PATH: 'data/10M/predictions/'

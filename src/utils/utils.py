@@ -1,6 +1,7 @@
 
 import pickle
 import yaml
+import json
 
 
 def save_artifact(artifact:object, save_path:str) -> None:
@@ -20,3 +21,15 @@ def read_yaml(yaml_file_path:str) -> dict:
         yaml_file = yaml.safe_load(file)
 
     return yaml_file
+
+
+def read_json(filepath:str):
+    with open(filepath, 'r') as file:
+        j = json.load(file)
+
+    return j
+
+
+def write_json(data:dict, filepath:str):
+    with open(filepath, 'w') as file:
+        json.dump(data, file, indent=4)

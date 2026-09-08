@@ -1,6 +1,9 @@
+import os
+from src.logger import logging as l
+logging = l.getLogger(__name__)
+
 from src.train.trainer import ConfigManager
 from src.pipeline.components import (DataComponent, TrainerComponent, FineTuningComponent, PredictionComponent)
-
 
 class Pipeline:
     def __init__(self, 
@@ -22,8 +25,8 @@ class Pipeline:
         self.model_config = ConfigManager(model_config_path, config_settings=model_type+'_CONFIG')
         self.hyperparams_config = ConfigManager(hyperparams_config_path)
         self.trainer_config = ConfigManager(trainer_config_path)
-
         self.finetuning_config = None
+
         if finetuning_config_path is not None:
             self.finetuning_config = ConfigManager(finetuning_config_path)
 
@@ -37,45 +40,78 @@ class Pipeline:
                      trainer_kwargs:dict={},
                      finetuning_kwargs:dict={},
                      max_epochs_finetuning:int=2,
-                     n_trials:int=50):
+                     n_trials:int=5,
+                     save_model:bool=True,
+                     force_process=False,
+                     process_data=False,
+                     storage=False):
+
+        logging.info('Creating a Pipeline.')
 
 
         # set pipeline components
         # set empty handler that will be replaced in case that finetuning stage happens
         model_extra_config, hyperparams_extra_config, dataset_extra_config= {}, {}, {}
 
+        # it will inin the training process, it changes to false if the finetuning can 
+        # find a better set of hyperparams
+        continue_training = True
 
 
         # Load DataLoader
+        
         dc = DataComponent(data_config=self.data_dir_config,
                            dataset_config=self.dataset_config)
+        logging.info('Creating a DataLoader Component')
         dataloader = dc.get_component(
                               dataset_type=self.dataset_type,
                               dataset_size=self.datasize,
                               data_kwargs=data_dir_kwargs,
-                              dataset_kwargs=dataset_kwargs)
+                              dataset_kwargs=dataset_kwargs,
+                              force_process=force_process,
+                              process_data=process_data,)
 
         # Finetuning component
         # Finetune search the best set of hyperparams for a given type of model
         if self.finetuning_config is not None:
+            logging.info('Starting the finetuning Process.')
             ftc = FineTuningComponent(
                 self.model_config,
                 hyperparams_config=self.hyperparams_config,
                 finetuning_config=self.finetuning_config,
-                trainer_config=self.trainer_config
+                trainer_config=self.trainer_config,
+                data_dir_config=self.data_dir_config
             )
             tuner = ftc.get_component(
                 study_name=self.model_type,
                 n_trials=n_trials,
                 model_type=self.model_type,
                 dataset_type=self.dataset_type, # type: ignore
-                trainer_kwargs=trainer_kwargs ,
-                storage=None,
+                trainer_kwargs={'verbose':False, 
+                                "sanity_check_steps":0, 
+                                'save_intermediate_ckpts':False,
+                                },
+                storage=storage
             )
-            # 
+            # The hparams will replace the default and user defined parameters
+            logging.info('Starting the hyperparameters search')
             tuner.search_params(dataloader=dataloader, max_epochs=max_epochs_finetuning)
             model_extra_config, hyperparams_extra_config, dataset_extra_config = tuner.get_best_params()
+            best_metrics = tuner.get_best_metrics()
+            candidate_params = {**best_metrics,
+                               'model_config': model_extra_config,
+                               'hyperparams_config': hyperparams_extra_config,
+                               'dataset_config': dataset_extra_config,
+                               }
+            continue_training = tuner.check_and_save_best_params_(candidate_best_params=candidate_params)
+            logging.info(f"The finetuning process has found better hyperparameters: {continue_training}")
+
             
+        if not continue_training:
+            logging.warning(f"The Skip Training")
+            print('Skip training...')
+            return None
+        
 
         # Update the parameters with the new values obtained from the tuner
         model_args = self.model_config(**model_kwargs) | model_extra_config
@@ -83,14 +119,15 @@ class Pipeline:
         dataset_args = self.dataset_config() | dataset_extra_config
         trainer_args  = self.trainer_config () | {"max_epochs": max_epochs}
 
-        
 
+        logging.info('Creating the Trainer Component')
         tc = TrainerComponent(
             model_config=self.model_config,
             hyperparams_config=self.hyperparams_config,
             trainer_config=self.trainer_config,
         )
         trainer = tc.get_component(
+            max_epochs=max_epochs,
             model_type=self.model_type,
             trainer_kwargs=trainer_args,
             hyperparams_config=hyper_args,
@@ -99,6 +136,7 @@ class Pipeline:
 
 
         # Predictor predicts the items and saves the items with the higher values into a csv
+        logging.info('Creating the Predictor Component')
         pc = PredictionComponent(data_config=self.data_dir_config)
         predictor = pc.get_component(dataset_type=self.dataset_type,
                                      dataset_size=self.datasize)
@@ -109,16 +147,33 @@ class Pipeline:
         dataloader.batch_size = dataset_args['batch_size']
 
         # trainer
+        logging.info('Starting Training Process.')
         model = trainer.get_model()
         training_results = trainer.train(model=model, dataloader=dataloader)
+        self.training_results = training_results
+        logging.info(f"Training Results: {training_results}")
+
+        if save_model:
+            logging.info('Saving the model')
+            path = self.data_dir_config()['REGISTRY']['models']
+            trainer.save_model(model=model, save_model_path=path)
+
 
         # predictor
-        predictions = predictor.predict(model=model, user_id=12)
+        logging.info('Starting Prediction Process.')
+
+        UIDX = 12
+        predictions = predictor.predict(model=model, user_id=UIDX)
         predictions_df = predictor.get_predicted_items(predictions=predictions)
 
-        predictor.save_predictions(predictions_df, 'artifacts/predictions_12.csv')
+        preds_dir = self.data_dir_config()['PREDICTIONS'][self.datasize.upper()]['PATH']
+        if not os.path.exists:
+            os.makedirs(preds_dir)
+        preds_file_dir = os.path.join(preds_dir, f"predictions_{UIDX}.csv")
 
 
-        self.training_results = training_results
+        logging.info(f'Saving Predictions to {preds_dir}')
+        predictor.save_predictions(predictions_df, preds_file_dir)
+
 
         print('Pipeline Process Completed.')

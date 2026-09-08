@@ -1,8 +1,12 @@
 import os
 import random
 import pandas as pd 
+from src.logger import logging
 from typing import List, Literal, Tuple
 from src.utils.utils import save_artifact
+
+logging = logging.getLogger(__name__)
+
 
 
 
@@ -12,7 +16,8 @@ class ProcessData:
                  destination_paths:List[str], 
                  splits:List[float],
                  mode:str='random',
-                 encode_data:bool=True):
+                 encode_data:bool=True,
+                 encoder_path:str|None=None):
         """
         Processing Data Step.
         It split the data into two or three different sets.
@@ -28,6 +33,8 @@ class ProcessData:
         assert len(splits) in [2, 3], 'The splits list needs 2 or 3 values'
         assert sum(splits) == 1.0, 'The sum of the splits list must sum up 1.0'
         assert mode in ['random', 'user', 'user_time'], f"mode argument only takes srtings: 'random', 'user' and 'user_time' as possible values. {mode} was used."
+        if encode_data:
+            assert encoder_path is not None, "When 'encode_data=True' you need to specified 'encoder_path'"
 
         self.raw_data_path = raw_data_path
         self.mode = mode
@@ -40,32 +47,42 @@ class ProcessData:
         self.destination_paths = paths
         self.test_split = True if len(destination_paths) == 3 else False
         self.encode_data = encode_data
+        self.encoder_path = encoder_path
 
 
     def process_data(self, force_process=False) -> None:
         data_in_destination = self.check_data()
-        print('data in final directory:', data_in_destination)
-
+        logging.info('Data is already at the specified location.')
+        
         if (data_in_destination) and (force_process==False):
-            print('Data already in local path.')
+            logging.info('The data is processed and the processing step has been skipped.')
         else:
-            df = pd.read_csv(os.path.join(self.raw_data_path, 'ratings.csv'))
+            try:
+                logging.info('Data Process has init.')
+                df = pd.read_csv(os.path.join(self.raw_data_path, 'ratings.csv'))
 
-            if self.encode_data:
-                encoder = MovieIDEncoder()
-                encoder.fit(df['movieId'].to_list())
-                self.encoder = encoder
-                df['movieId'] = df['movieId'].apply(encoder.encode_id)
+                if self.encode_data:
+                    logging.info('Creating and saving ItemEncoder object')
+                    encoder = MovieIDEncoder()
+                    encoder.fit(df['movieId'].to_list())
+                    self.encoder = encoder
+                    df['movieId'] = df['movieId'].apply(encoder.encode_id)
+                    save_artifact(self.encoder, self.encoder_path) #type: ignore
 
-            if self.mode == 'random':
-                dfs = self._process_random(df)
-            elif self.mode =='user':
-                dfs = self._process_per_user(df)
-            else:
-                dfs = self._process_per_user(df, time_aware=True)
+                logging.info('Spliting the data using: {self.mode} mode.')
+                if self.mode == 'random':
+                    dfs = self._process_random(df)
+                elif self.mode =='user':
+                    dfs = self._process_per_user(df)
+                else:
+                    dfs = self._process_per_user(df, time_aware=True)
 
-            self._save_data(dfs)
-            save_artifact(self.encoder, 'artifacts/movie_encoder.pkl')
+                logging.info(f'Saving the data to {self.destination_paths}')
+                self._save_data(dfs)
+   
+            except Exception as  e:
+                logging.error('A error occurs during the data processing step...')
+                raise e 
 
 
     def _process_random(self, df:pd.DataFrame) -> Tuple[pd.DataFrame, ...]:

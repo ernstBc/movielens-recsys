@@ -17,9 +17,7 @@ class GetData:
         """
         Downloads the dataset from the url.
         """
-        print('Downloading data...')
         file_name, file_status = request.urlretrieve(self.dataset_url, file_name)
-        print('data downloaded')
         return file_name, file_status
 
 
@@ -28,11 +26,9 @@ class GetData:
         """
         Extracts the downloaded dataset if it is in a zip format.
         """
-        print('Extracting data...')
         if data_location.endswith('.zip'):
             with zipfile.ZipFile(data_location, 'r') as zip_ref:
                 zip_ref.extractall(data_extracted_location)
-        print('data extracted.')
 
 
     def get_data(self):
@@ -51,9 +47,7 @@ class GetData:
 
                 # move the files from tmp dir to the persistent dir
                 path_tmpdir = Path(tmp_dir)
-                print(os.listdir(path_tmpdir))
                 folder_in_tmp_dir = [f.name for f in path_tmpdir.iterdir() if f.is_dir()]
-                print('folder in tmp dir:', folder_in_tmp_dir)
 
                 if len(folder_in_tmp_dir) == 0:
                     raise Exception('No folder found in tmp dir')
@@ -61,12 +55,10 @@ class GetData:
                 file_in_tmp_dir_path = os.path.join(tmp_dir, folder_in_tmp_dir[0])
                 list_files = [file for file in os.listdir(file_in_tmp_dir_path) if file.endswith('.csv') ]
 
-                print('Moving files ...')
                 for file in list_files:
-                    print(f'Moving file: {file} to {self.dataset_path}')
                     shutil.move(os.path.join(file_in_tmp_dir_path, file), self.dataset_path)
 
-                print('files moved.')
+
         else:
             print('Dataset already downloaded and extracted.')
 
@@ -80,11 +72,3 @@ class GetData:
             download_needed = True
 
         return download_needed
-
-
-    
-if __name__ =='__main__':
-    import yaml
-    config_yaml = 'config/config.yaml'
-
-    config_file = yaml

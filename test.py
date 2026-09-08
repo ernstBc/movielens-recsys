@@ -3,6 +3,48 @@ from src.pipeline.components import DataComponent, TrainerComponent, FineTuningC
 from src.pipeline.pipe import Pipeline
 
 
+def test_finetuning(
+        model_type,
+        dataset_type,
+        datasize
+):
+    model_config = ConfigManager(model_config_path, config_settings=model_type+'_CONFIG')
+    
+    # Load dataset configuration
+    dataset_config = ConfigManager(dataset_config_path, config_settings=dataset_type+'_DATASET_CONFIG')
+    
+    # Load hyperparameters configuration
+    hyperparams_config = ConfigManager(hyperparams_config_path)
+
+    # load data dir configuration
+    data_dir_config = ConfigManager(data_dir_config_path)
+
+    # Load finetuning configuration
+    finetuning_config = ConfigManager(finetuning_config_path)
+
+    # load trainer configuration
+    trainer_config = ConfigManager(trainer_config_path)
+
+    # components
+    print('init data component')
+    dc = DataComponent(data_config=data_dir_config, dataset_config=dataset_config)
+    dl = dc.get_component(dataset_type=dataset_type, dataset_size=datasize, process_data=False, force_process=True)
+    print(dl)
+
+    print('init finetuning component')
+    ftc = FineTuningComponent(model_config=model_config, hyperparams_config=hyperparams_config, finetuning_config=finetuning_config, trainer_config=trainer_config)
+    tuner = ftc.get_component(study_name='a', 
+                              n_trials=10, 
+                              model_type=model_type, 
+                              dataset_type=dataset_type, 
+                              storage='sqlite:///example.db', 
+                              trainer_kwargs={'save_intermediate_ckpts':False,
+                                              'sanity_check_steps':0,
+                                              'verbose':False})
+
+    tuner.search_params(dl, max_epochs=5)
+
+
 
 def test_model_v2(
         model_type,
@@ -115,25 +157,29 @@ if __name__ =='__main__':
 
 
 
-    # preds, preds_df = test_model_v2(model_type=MODEL_TYPE, dataset_type=DATASET_TYPE, datasize=DATASIZE)
-    # print(preds)
-    # print(preds_df)
+    print('test_finetuning')
+    test_finetuning(MODEL_TYPE, DATASET_TYPE, DATASIZE)
 
 
 
-    models_type = ['AUTOENCODER', 'DEEP_AUTOENCODER', 'MATRIX_FACTORIZATION', 'DEEP_MATRIX_FACTORIZATION']
-    dataset_types = ['AUTOENCODER'] * 2 + ['USER_ITEM']*2
 
 
 
-    for MODEL_TYPE, DATASET_TYPE in zip(models_type, dataset_types):
-        print('-------------------- Init Pipeline -----------------------')
-        print('Model Type:', MODEL_TYPE
-              , 'Dataset Type:', DATASET_TYPE
-              , 'Data Size:', DATASIZE)
-        print('----------------------------------------------------------')
-        pipe = test_pipeline(
-        model_type=MODEL_TYPE,
-        dataset_type=DATASET_TYPE,
-        datasize=DATASIZE
-    )
+    if 'a'=='aa':
+
+        models_type = ['AUTOENCODER', 'DEEP_AUTOENCODER', 'MATRIX_FACTORIZATION', 'DEEP_MATRIX_FACTORIZATION']
+        dataset_types = ['AUTOENCODER'] * 2 + ['USER_ITEM']*2
+
+
+
+        for MODEL_TYPE, DATASET_TYPE in zip(models_type, dataset_types):
+            print('-------------------- Init Pipeline -----------------------')
+            print('Model Type:', MODEL_TYPE
+                , 'Dataset Type:', DATASET_TYPE
+                , 'Data Size:', DATASIZE)
+            print('----------------------------------------------------------')
+            pipe = test_pipeline(
+            model_type=MODEL_TYPE,
+            dataset_type=DATASET_TYPE,
+            datasize=DATASIZE
+        )

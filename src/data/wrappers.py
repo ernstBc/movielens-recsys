@@ -1,4 +1,8 @@
 import os
+from src.logger import logging as l
+logging = l.getLogger(__name__) 
+
+
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader, random_split
 from src.data.datasets import AutoEncoderDataset, NegSampleDataset, UserItemDataset
@@ -6,6 +10,7 @@ from src.data.get_data import GetData
 from src.data.processing_data import ProcessData
 from typing import Literal
 from src.train.customs import negative_sampling_collate_fn
+
 
 
 class AutoencoderSampling(pl.LightningDataModule):
@@ -56,10 +61,10 @@ class AutoencoderSampling(pl.LightningDataModule):
         self.test_dataset = test_dataset
 
     def train_dataloader(self) -> DataLoader:
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, persistent_workers=True)
 
     def val_dataloader(self) -> DataLoader:
-        return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
+        return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=max(self.num_workers // 2, 1), persistent_workers=True)
 
     def test_dataloader(self) -> DataLoader:
         return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
@@ -81,7 +86,9 @@ class UserItemDataSampling(pl.LightningDataModule):
                  num_workers:int=1,
                  num_negatives:int=0,
                  force_process=False,
-                 process_data:bool=True):
+                 process_data:bool=True,
+                 encode_data:bool=False,
+                 encoder_path:str|None=None):
         super().__init__()
 
         self.dataset_url = dataset_url
@@ -100,11 +107,14 @@ class UserItemDataSampling(pl.LightningDataModule):
         self.num_negatives = num_negatives
         self.force_process = force_process
         self.process_data = process_data
+        self.encode_data = encode_data
+        self.encoder_path = encoder_path
 
         assert split_mode in ['random', 'user', 'user_time'], "split mode must be one of the possible values ['random', 'user', 'user_time']. {split_mode} was used."
 
 
     def prepare_data(self) -> None:
+        logging.info('Preparing the data within the lightning data module.')
         if self.process_data:
             split_mode = self.split_mode
             testing = self.testing
@@ -129,12 +139,18 @@ class UserItemDataSampling(pl.LightningDataModule):
             pd = ProcessData(raw_data_path=dataset_path,
                             destination_paths=destination_paths, 
                             splits=splits, 
-                            mode=split_mode)
+                            mode=split_mode,
+                            encode_data=self.encode_data,
+                            encoder_path=self.encoder_path
+                            )
 
             pd.process_data(force_process=self.force_process)
+        else:
+            logging.info('The preparation of the data within the lightning module has been skipped.')
 
 
     def setup(self, stage: str) -> None:
+        logging.info('Initializing the setup of the data inside the lightning datamodule.')
         negative_sampling = self.negative_sampling
         testing = self.testing
 
@@ -142,10 +158,12 @@ class UserItemDataSampling(pl.LightningDataModule):
         val_set_path = self.validation_dataset_path
 
         if negative_sampling:
+            logging.info(f'Using NegativeSamplingDataset with {self.num_negatives} negative samples.')
             num_negatives = self.num_negatives
             train_dataset = NegSampleDataset(data_path=train_set_path, num_negatives=num_negatives)
 
         else:
+            logging.info('Using UserItemDataset')
             train_dataset = UserItemDataset(data_path=train_set_path)
 
         val_dataset = UserItemDataset(data_path=val_set_path)
@@ -164,13 +182,15 @@ class UserItemDataSampling(pl.LightningDataModule):
                           batch_size=self.batch_size, 
                           shuffle=True,
                           num_workers=self.num_workers,
+                          persistent_workers=True,
                           collate_fn=negative_sampling_collate_fn if isinstance(self.train_dataset, NegSampleDataset) else None)
 
     def val_dataloader(self) -> DataLoader:
         return DataLoader(self.val_dataset, 
                           batch_size=self.batch_size, 
                           shuffle=False,
-                          num_workers=self.num_workers,
+                          num_workers=max(self.num_workers // 2, 1),
+                          persistent_workers=True,
                           collate_fn=negative_sampling_collate_fn if isinstance(self.val_dataset, NegSampleDataset) else None)
 
     def test_dataloader(self) -> DataLoader:

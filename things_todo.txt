@@ -1,14 +1,12 @@
 * [CHECKED] Implement the pipeline class
 * add a logger to the project
-
-
-* add a function to save the hyperparameters obtained from the finetuner component
-* add a function to continue the hyperparameters search in the finetuner component (storage argument)
+* [CHECKED] add a function to save the hyperparameters obtained from the finetuner component
+* [CHECKED] add a function to continue the hyperparameters search in the finetuner component (storage argument)
 * [CHECKED] Reimplement trainer class to split the trainer component into data and training components 
-* Implement iterable versions of the datasets
-* Implement NeuFM algorithm
+* [CHECKED] Implement NeuFM algorithm
 * check 10M dataset against all the implemented models
 * [CHECKED] main.py to train a model with argsparse
+* Implement iterable versions of the datasets
 * Implement implicit feedback datasets
 * implement implicit feedback losses 
-* check if the models works with implicit feedback data
+* models works with implicit feedback data

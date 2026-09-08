@@ -1,7 +1,5 @@
-max_epochs: 5
 verbose: True
 sanity_check_steps: 2
-profiler: null 
-save_model_path: artifacts/
+profiler: null
 save_intermediate_ckpts: True
 from_checkpoint: null

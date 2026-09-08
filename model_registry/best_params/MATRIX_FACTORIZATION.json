@@ -1,0 +1,14 @@
+{
+    "train_loss": 4.9391350746154785,
+    "val_loss": 4.8289794921875,
+    "model_config": {
+        "user_item_embedding_dim": 69
+    },
+    "hyperparams_config": {
+        "lr": 0.002273862423160317,
+        "weight_decay": 0.00906579839512345
+    },
+    "dataset_config": {
+        "batch_size": 88
+    }
+}

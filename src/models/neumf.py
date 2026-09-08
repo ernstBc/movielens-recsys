@@ -102,5 +102,3 @@ if __name__=='__main__':
     preds = neumf(user_id_batch_example, item_id_batch_example)
     print('Prediction shape', preds.shape)
     print('Single Predictions:', preds)
-
-
