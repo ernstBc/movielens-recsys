@@ -63,6 +63,16 @@ class PredictUserAllItems:
         predictions.to_csv(save_path)
 
 
+    def predict_all_and_save(self, model, n_users:int, save_path:str, top_k:int=10):
+        for idx_user in range(1, n_users+1):
+            pred_user = self.predict(model=model, user_id=idx_user)
+            pred_user_df = self.get_predicted_items(predictions=pred_user, top_k=top_k)
+
+            filepath = os.path.join(save_path, f"predicitons_{idx_user}.csv")
+            self.save_predictions(predictions=pred_user_df, save_path=filepath)
+
+
+
 class PredictAutoencoderItems:
     def __init__(self, data_path:str, movies_df_path:str):
         self.data = self._process_data(pd.read_csv(data_path))
@@ -99,3 +109,12 @@ class PredictAutoencoderItems:
     def _process_data(self, data:pd.DataFrame):
         d = data.pivot(index = 'userId', columns='movieId', values='rating').fillna(0)
         return d
+
+
+    def predict_all_and_save(self, model, n_users:int, save_path:str, top_k:int=10):
+        for idx_user in range(1, n_users+1):
+            pred_user = self.predict(model=model, user_id=idx_user)
+            pred_user_df = self.get_predicted_items(predictions=pred_user, top_k=top_k)
+
+            filepath = os.path.join(save_path, f"predicitons_{idx_user}.csv")
+            self.save_predictions(predictions=pred_user_df, save_path=filepath)

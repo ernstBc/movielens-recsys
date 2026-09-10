@@ -38,7 +38,6 @@ class Pipeline:
                      dataset_kwargs:dict={},
                      data_dir_kwargs:dict={},
                      trainer_kwargs:dict={},
-                     finetuning_kwargs:dict={},
                      max_epochs_finetuning:int=2,
                      n_trials:int=5,
                      save_model:bool=True,
@@ -117,7 +116,7 @@ class Pipeline:
         model_args = self.model_config(**model_kwargs) | model_extra_config
         hyper_args = self.hyperparams_config(**hyperparams_kwargs) | hyperparams_extra_config
         dataset_args = self.dataset_config() | dataset_extra_config
-        trainer_args  = self.trainer_config () | {"max_epochs": max_epochs}
+        trainer_args  = self.trainer_config(**trainer_kwargs) | {"max_epochs": max_epochs}
 
 
         logging.info('Creating the Trainer Component')
@@ -126,6 +125,7 @@ class Pipeline:
             hyperparams_config=self.hyperparams_config,
             trainer_config=self.trainer_config,
         )
+        logging.info('Getting Trainer Component')
         trainer = tc.get_component(
             max_epochs=max_epochs,
             model_type=self.model_type,
@@ -138,6 +138,7 @@ class Pipeline:
         # Predictor predicts the items and saves the items with the higher values into a csv
         logging.info('Creating the Predictor Component')
         pc = PredictionComponent(data_config=self.data_dir_config)
+        logging.info('Getting Predictor Component')
         predictor = pc.get_component(dataset_type=self.dataset_type,
                                      dataset_size=self.datasize)
 
@@ -157,23 +158,16 @@ class Pipeline:
             logging.info('Saving the model')
             path = self.data_dir_config()['REGISTRY']['models']
             trainer.save_model(model=model, save_model_path=path)
+            logging.info(f'Model saved at {path}')
 
 
         # predictor
         logging.info('Starting Prediction Process.')
 
-        UIDX = 12
-        predictions = predictor.predict(model=model, user_id=UIDX)
-        predictions_df = predictor.get_predicted_items(predictions=predictions)
-
-        preds_dir = self.data_dir_config()['PREDICTIONS'][self.datasize.upper()]['PATH']
-        if not os.path.exists:
-            os.makedirs(preds_dir)
-        preds_file_dir = os.path.join(preds_dir, f"predictions_{UIDX}.csv")
-
-
-        logging.info(f'Saving Predictions to {preds_dir}')
-        predictor.save_predictions(predictions_df, preds_file_dir)
-
+        save_path = self.data_dir_config()['PREDICTIONS'][self.datasize.upper()]['PATH']
+        n_users = self.data_dir_config()['DATA_DIR'][self.datasize.upper()]['N_USERS']
+        predictor.predict_all_and_save(model=model, n_users=n_users, save_path=save_path)
+        logging.info(f'Predictions saved at {save_path}')
+   
 
         print('Pipeline Process Completed.')

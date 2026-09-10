@@ -78,7 +78,7 @@ class Tuner:
         # update the batch_size and stop processing the data after the first trial
         dl = dataloder
         dl.batch_size = BATCH_SIZE
-        if trial.number == 1: 
+        if trial.number >= 1: 
                dl.force_process = False #type ignore 
                dl.process_data = False
 

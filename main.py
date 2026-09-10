@@ -30,7 +30,7 @@ parser.add_argument('--force_process',
 parser.add_argument('--process_data',
                     action='store_true',
                     help="Forces the data download process.")
-parser.add_argument('--n_epochs_trial', type=int, default=10, help='Number of epochs in each hyperparameter search trial.')
+parser.add_argument('--trial_epochs', type=int, default=10, help='Number of epochs in each hyperparameter search trial.')
 parser.add_argument('--n_trials', type=int, default=10, help='Number of trial in the finetuning process.')
 parser.add_argument('--prototype', action='store_true', help="Run prototype pipeline with small dataset,  few epochs and none artifact will be saved locally.")
 
@@ -38,6 +38,7 @@ args = parser.parse_args()
 
 
 def main():
+
     N_EPOCHS = args.epochs
     FINETUNING = args.finetuning
     MODEL_TYPE = args.model_type.upper()
@@ -46,7 +47,7 @@ def main():
     PROCESS_DATA = args.process_data
     FORCE_DATA = args.force_process
     PROTOTYPE = args.prototype
-    N_EPOCHS_TRIAL = args.n_epochs_trial
+    N_EPOCHS_TRIAL = args.trial_epochs
     N_TRIALS = args.n_trials
     STORAGE = True
     SAVE_MODEL = True
@@ -60,6 +61,11 @@ def main():
         N_TRIALS = 1
         STORAGE=False
         SAVE_MODEL=False
+
+    if DATASET_TYPE == 'AUTOENCODER':
+        assert MODEL_TYPE in ['AUTOENCODER', 'DEEP_AUTOENCODER'], "Autoencoder models only accept 'autoencoder' dataset type."
+    if MODEL_TYPE in ['AUTOENCODER', 'DEEP_AUTOENCODER']:
+        assert DATASET_TYPE =='AUTOENCODER', "Autoencoder models only accept 'autoencoder' dataset type."
         
 
     logging.info('Start Pipeline')

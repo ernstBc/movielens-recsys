@@ -1,14 +1,15 @@
 {
-    "train_loss": 1.1292458772659302,
-    "val_loss": 1.857218861579895,
+    "train_loss": 1.045352816581726,
+    "val_loss": 1.8054522275924683,
     "model_config": {
-        "hidden_dim": 234
+        "hidden_dim": 318
     },
     "hyperparams_config": {
-        "lr": 0.0016804277337264424,
-        "weight_decay": 0.0009538894064725783
+        "lr": 0.0018451911409830368,
+        "weight_decay": 0.0007043050969462611,
+        "optimizer_name": "adamw"
     },
     "dataset_config": {
-        "batch_size": 121
+        "batch_size": 304
     }
 }

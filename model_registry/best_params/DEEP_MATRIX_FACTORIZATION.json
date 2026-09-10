@@ -1,0 +1,21 @@
+{
+    "train_loss": 0.6893977522850037,
+    "val_loss": 0.7722572684288025,
+    "model_config": {
+        "user_embedding_dim": 268,
+        "item_embedding_dim": 500,
+        "hidden_dims": [
+            136,
+            216
+        ],
+        "dropout_rate": 0.512476163980481
+    },
+    "hyperparams_config": {
+        "lr": 0.000991658896061763,
+        "weight_decay": 0.0025195589406210262,
+        "optimizer_name": "rmsprop"
+    },
+    "dataset_config": {
+        "batch_size": 56
+    }
+}

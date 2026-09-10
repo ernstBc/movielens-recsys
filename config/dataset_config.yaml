@@ -3,7 +3,7 @@ AUTOENCODER_DATASET_CONFIG:
   split_mode: user
   data_size: 100K
   batch_size: 32
-  num_workers: 2
+  num_workers: 1
 
 USER_ITEM_DATASET_CONFIG:
   split_mode: user

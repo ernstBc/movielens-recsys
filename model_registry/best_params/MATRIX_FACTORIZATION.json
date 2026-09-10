@@ -1,14 +1,15 @@
 {
-    "train_loss": 4.9391350746154785,
-    "val_loss": 4.8289794921875,
+    "train_loss": 1.3262791633605957,
+    "val_loss": 1.0684432983398438,
     "model_config": {
-        "user_item_embedding_dim": 69
+        "user_item_embedding_dim": 85
     },
     "hyperparams_config": {
-        "lr": 0.002273862423160317,
-        "weight_decay": 0.00906579839512345
+        "lr": 0.009967262347903516,
+        "weight_decay": 0.0006031920264073001,
+        "optimizer_name": "nadam"
     },
     "dataset_config": {
-        "batch_size": 88
+        "batch_size": 89
     }
 }
